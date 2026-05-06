@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@wzhmi/core": ["../../packages/core/src/index.ts"],
+      "@wzhmi/widgets": ["../../packages/widgets/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}

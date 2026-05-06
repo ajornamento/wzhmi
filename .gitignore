@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.cache/
+*.local
+.env
+.env.*
+*.log
+apps/hmi-files/

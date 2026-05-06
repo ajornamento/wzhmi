@@ -1,0 +1,334 @@
+{
+  "v": "1.0.0",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "backgroundColor": "#1a1a1a"
+  },
+  "widgets": [
+    {
+      "id": "W001",
+      "type": "GAUGE",
+      "name": "GAUGE-W001",
+      "geometry": {
+        "x": 130,
+        "y": 180,
+        "width": 120,
+        "height": 120,
+        "rotation": 0,
+        "zIndex": 1
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#808080",
+        "animations": []
+      },
+      "actions": {
+        "confirmRequired": false
+      },
+      "properties": {
+        "label": "GAUGE",
+        "showTooltip": true
+      }
+    },
+    {
+      "id": "W002",
+      "type": "CONVEYOR",
+      "name": "CONVEYOR-W002",
+      "geometry": {
+        "x": 130,
+        "y": 350,
+        "width": 120,
+        "height": 120,
+        "rotation": 0,
+        "zIndex": 2
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#808080",
+        "animations": []
+      },
+      "actions": {
+        "confirmRequired": false
+      },
+      "properties": {
+        "label": "CONVEYOR",
+        "showTooltip": true
+      }
+    },
+    {
+      "id": "W003",
+      "type": "TANK",
+      "name": "TANK-W003",
+      "geometry": {
+        "x": 600,
+        "y": 290,
+        "width": 120,
+        "height": 120,
+        "rotation": 0,
+        "zIndex": 3
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#808080",
+        "animations": []
+      },
+      "actions": {
+        "confirmRequired": false
+      },
+      "properties": {
+        "label": "TANK",
+        "showTooltip": true
+      }
+    },
+    {
+      "id": "W004",
+      "type": "LINE",
+      "name": "LINE-W004",
+      "geometry": {
+        "x": 330,
+        "y": 320,
+        "width": 216,
+        "height": 16,
+        "rotation": 0,
+        "zIndex": 4
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#888888",
+        "animations": []
+      },
+      "actions": {},
+      "properties": {
+        "label": "",
+        "showTooltip": false,
+        "x1": 338,
+        "y1": 328,
+        "x2": 538,
+        "y2": 328,
+        "lineWidth": 2,
+        "lineStyle": "solid",
+        "lineType": "straight",
+        "arrowEnd": true,
+        "arrowStart": false
+      }
+    },
+    {
+      "id": "W005",
+      "type": "ALARM",
+      "name": "ALARM-W005",
+      "geometry": {
+        "x": 640,
+        "y": 80,
+        "width": 120,
+        "height": 120,
+        "rotation": 0,
+        "zIndex": 5
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#808080",
+        "animations": []
+      },
+      "actions": {
+        "confirmRequired": false
+      },
+      "properties": {
+        "label": "ALARM",
+        "showTooltip": true
+      }
+    },
+    {
+      "id": "W006",
+      "type": "ALARM",
+      "name": "ALARM-W006",
+      "geometry": {
+        "x": 280,
+        "y": 200,
+        "width": 120,
+        "height": 120,
+        "rotation": 0,
+        "zIndex": 6
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#808080",
+        "animations": []
+      },
+      "actions": {
+        "confirmRequired": false
+      },
+      "properties": {
+        "label": "ALARM",
+        "showTooltip": true
+      }
+    },
+    {
+      "id": "W007",
+      "type": "TANK",
+      "name": "TANK-W007",
+      "geometry": {
+        "x": 430,
+        "y": 60,
+        "width": 120,
+        "height": 120,
+        "rotation": 0,
+        "zIndex": 7
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#808080",
+        "animations": []
+      },
+      "actions": {
+        "confirmRequired": false
+      },
+      "properties": {
+        "label": "TANK",
+        "showTooltip": true
+      }
+    },
+    {
+      "id": "W008",
+      "type": "VALVE",
+      "name": "VALVE-W008",
+      "geometry": {
+        "x": 110,
+        "y": 50,
+        "width": 120,
+        "height": 120,
+        "rotation": 0,
+        "zIndex": 8
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#808080",
+        "animations": []
+      },
+      "actions": {
+        "confirmRequired": false
+      },
+      "properties": {
+        "label": "VALVE",
+        "showTooltip": true
+      }
+    },
+    {
+      "id": "W009",
+      "type": "TEXT_LABEL",
+      "name": "TEXT_LABEL-W009",
+      "geometry": {
+        "x": 860,
+        "y": 50,
+        "width": 120,
+        "height": 120,
+        "rotation": 0,
+        "zIndex": 9
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#808080",
+        "animations": []
+      },
+      "actions": {
+        "confirmRequired": false
+      },
+      "properties": {
+        "label": "TEXT_LABEL",
+        "showTooltip": true
+      }
+    },
+    {
+      "id": "W010",
+      "type": "LINE",
+      "name": "LINE-W010",
+      "geometry": {
+        "x": 254,
+        "y": 92,
+        "width": 185,
+        "height": 20,
+        "rotation": 0,
+        "zIndex": 10
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#888888",
+        "animations": []
+      },
+      "actions": {},
+      "properties": {
+        "label": "",
+        "showTooltip": false,
+        "x1": 262,
+        "y1": 101,
+        "x2": 431,
+        "y2": 100,
+        "lineWidth": 2,
+        "lineStyle": "solid",
+        "lineType": "straight",
+        "arrowEnd": true,
+        "arrowStart": false
+      }
+    }
+  ]
+}

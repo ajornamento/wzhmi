@@ -1,0 +1,277 @@
+{
+  "v": "1.0.0",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "backgroundColor": "#1a1a1a"
+  },
+  "widgets": [
+    {
+      "id": "W001",
+      "type": "LINE",
+      "name": "LINE-W001",
+      "geometry": {
+        "x": 230,
+        "y": 180,
+        "width": 201.0634529862583,
+        "height": 71.09324656601567,
+        "rotation": 0,
+        "zIndex": 1
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#888888",
+        "animations": [
+          {
+            "condition": "== 1",
+            "property": "fill",
+            "value": "#ff004c",
+            "effect": "flow"
+          }
+        ]
+      },
+      "actions": {},
+      "properties": {
+        "label": "",
+        "showTooltip": false,
+        "x1": 423.0634529862583,
+        "y1": 188,
+        "x2": 238,
+        "y2": 243.09324656601567,
+        "lineWidth": 2,
+        "lineStyle": "solid",
+        "lineType": "straight",
+        "arrowEnd": true,
+        "arrowStart": false,
+        "previewValue": "1"
+      }
+    },
+    {
+      "id": "W002",
+      "type": "LINE",
+      "name": "LINE-W002",
+      "geometry": {
+        "x": 160,
+        "y": 304,
+        "width": 637,
+        "height": 32,
+        "rotation": 0,
+        "zIndex": 2
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#888888",
+        "animations": [
+          {
+            "condition": "== 1",
+            "property": "fill",
+            "value": "#00ff00",
+            "effect": "flow"
+          },
+          {
+            "condition": "== 0",
+            "property": "fill",
+            "value": "#00ff00",
+            "effect": "static"
+          }
+        ]
+      },
+      "actions": {},
+      "properties": {
+        "label": "",
+        "showTooltip": false,
+        "x1": 168,
+        "y1": 328,
+        "x2": 789,
+        "y2": 312,
+        "lineWidth": 2,
+        "lineStyle": "solid",
+        "lineType": "straight",
+        "arrowEnd": true,
+        "arrowStart": false,
+        "previewValue": "0"
+      }
+    },
+    {
+      "id": "W003",
+      "type": "TANK",
+      "name": "TANK-W003",
+      "geometry": {
+        "x": 70,
+        "y": 270,
+        "width": 120,
+        "height": 120,
+        "rotation": 0,
+        "zIndex": 3
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#808080",
+        "animations": []
+      },
+      "actions": {
+        "confirmRequired": false
+      },
+      "properties": {
+        "label": "TANK",
+        "showTooltip": true
+      }
+    },
+    {
+      "id": "W004",
+      "type": "GAUGE",
+      "name": "GAUGE-W004",
+      "geometry": {
+        "x": 770,
+        "y": 240,
+        "width": 120,
+        "height": 120,
+        "rotation": 0,
+        "zIndex": 4
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#808080",
+        "animations": []
+      },
+      "actions": {
+        "confirmRequired": false
+      },
+      "properties": {
+        "label": "GAUGE",
+        "showTooltip": true
+      }
+    },
+    {
+      "id": "W009",
+      "type": "CONVEYOR",
+      "name": "CONVEYOR-W009",
+      "geometry": {
+        "x": 390,
+        "y": 20,
+        "width": 188,
+        "height": 159,
+        "rotation": 0,
+        "zIndex": 5
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#808080",
+        "animations": []
+      },
+      "actions": {
+        "confirmRequired": false
+      },
+      "properties": {
+        "label": "CONVEYOR",
+        "showTooltip": true
+      }
+    },
+    {
+      "id": "W010",
+      "type": "LINE",
+      "name": "LINE-W010",
+      "geometry": {
+        "x": 160,
+        "y": 120,
+        "width": 216,
+        "height": 16,
+        "rotation": 0,
+        "zIndex": 6
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#888888",
+        "animations": []
+      },
+      "actions": {},
+      "properties": {
+        "label": "",
+        "showTooltip": false,
+        "x1": 168,
+        "y1": 128,
+        "x2": 368,
+        "y2": 128,
+        "lineWidth": 2,
+        "lineStyle": "solid",
+        "lineType": "straight",
+        "arrowEnd": true,
+        "arrowStart": false
+      }
+    },
+    {
+      "id": "W011",
+      "type": "LINE",
+      "name": "LINE-W011",
+      "geometry": {
+        "x": 610,
+        "y": 130,
+        "width": 216,
+        "height": 16,
+        "rotation": 0,
+        "zIndex": 7
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#888888",
+        "animations": []
+      },
+      "actions": {},
+      "properties": {
+        "label": "",
+        "showTooltip": false,
+        "x1": 618,
+        "y1": 138,
+        "x2": 818,
+        "y2": 138,
+        "lineWidth": 2,
+        "lineStyle": "solid",
+        "lineType": "straight",
+        "arrowEnd": true,
+        "arrowStart": false
+      }
+    }
+  ]
+}
