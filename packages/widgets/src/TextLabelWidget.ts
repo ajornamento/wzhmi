@@ -1,7 +1,19 @@
+import type { Widget } from '@wzhmi/core';
 import { BaseWidget } from './base/BaseWidget';
 
 export class TextLabelWidget extends BaseWidget {
   private _textEl: HTMLDivElement | null = null;
+  private _hasSetValue = false;
+
+  configure(widget: Widget) {
+    this._hasSetValue = false;
+    super.configure(widget);
+  }
+
+  setValue(value: number | string | boolean) {
+    this._hasSetValue = true;
+    super.setValue(value);
+  }
 
   private get showValue(): boolean {
     // showValue가 명시적으로 false일 때만 숨김. 기본값은 true
@@ -11,9 +23,11 @@ export class TextLabelWidget extends BaseWidget {
   protected render() {
     this.innerHTML = '';
     const baseColor = this._widget?.styles.baseColor ?? '#ffffff';
+    const labelColor = String(this._widget?.properties.labelColor ?? '#888888');
     const fontSize = Number(this._widget?.properties.fontSize ?? 12);
     const fontFamily = this.getLabelFontFamily('sans-serif');
 
+    const rotation = this._widget?.geometry.rotation ?? 0;
     const div = document.createElement('div');
     Object.assign(div.style, {
       width: '100%',
@@ -31,6 +45,8 @@ export class TextLabelWidget extends BaseWidget {
       boxSizing: 'border-box',
       overflow: 'hidden',
       userSelect: 'none',
+      transform: rotation ? `rotate(${-rotation}deg)` : '',
+      transformOrigin: 'center center',
     });
 
     if (this.showValue) {
@@ -38,7 +54,7 @@ export class TextLabelWidget extends BaseWidget {
       const labelEl = document.createElement('div');
       Object.assign(labelEl.style, {
         fontSize: `${fontSize}px`,
-        color: '#888',
+        color: labelColor,
         marginBottom: '2px',
         lineHeight: '1.2',
       });
@@ -51,7 +67,7 @@ export class TextLabelWidget extends BaseWidget {
         color: baseColor,
         lineHeight: '1.2',
       });
-      valueEl.textContent = '—';
+      valueEl.textContent = '';
       this._textEl = valueEl;
 
       const unit = String(this._widget?.properties.unit ?? '');
@@ -59,7 +75,7 @@ export class TextLabelWidget extends BaseWidget {
         const unitEl = document.createElement('div');
         Object.assign(unitEl.style, {
           fontSize: `${Math.max(8, fontSize - 2)}px`,
-          color: '#888',
+          color: labelColor,
           marginTop: '2px',
           lineHeight: '1.2',
         });
@@ -76,7 +92,7 @@ export class TextLabelWidget extends BaseWidget {
       const labelEl = document.createElement('div');
       Object.assign(labelEl.style, {
         fontSize: `${fontSize}px`,
-        color: baseColor,
+        color: this._widget?.properties.labelColor ? labelColor : baseColor,
         fontWeight: 'bold',
         lineHeight: '1.4',
         wordBreak: 'break-word',
@@ -93,17 +109,19 @@ export class TextLabelWidget extends BaseWidget {
   protected updateVisuals() {
     if (!this._textEl || !this._widget) return;
     this.stopBlink();
+    this.stopPulse();
 
-    const anim = this.getActiveAnimation();
+    const anim = this._hasSetValue ? this.getActiveAnimation() : null;
     const color = anim ? anim.value : this._widget.styles.baseColor;
     this._textEl.style.color = color;
 
     if (this.showValue) {
-      this._textEl.textContent = this.getDisplayValue();
+      this._textEl.textContent = this._hasSetValue ? this.getDisplayValue() : '';
     }
     // 순수 라벨 모드에서는 값 갱신 불필요 (라벨 텍스트는 render()에서 설정)
 
     if (anim?.effect === 'blink') this.startBlink(color);
+    else if (anim?.effect === 'pulse') this.startPulse(color);
   }
 
   protected applyColor(color: string) {

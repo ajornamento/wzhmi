@@ -98,7 +98,7 @@ for (const tag of MOCK_TAGS) {
   tagIntervals.set(tag.tagId, interval);
 }
 
-const PORT = 3001;
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 httpServer.listen(PORT, () => {
   console.log(`\n🚀 HMI Dev Server`);
   console.log(`   HTTP API: http://localhost:${PORT}/api`);

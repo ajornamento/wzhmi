@@ -2,7 +2,7 @@ import { BaseWidget } from './base/BaseWidget';
 
 export class AlarmWidget extends BaseWidget {
   private _light: SVGCircleElement | null = null;
-  private _label: SVGTextElement | null = null;
+
 
   protected render() {
     this.innerHTML = '';
@@ -49,20 +49,16 @@ export class AlarmWidget extends BaseWidget {
     gloss.setAttribute('r', String(r * 0.35));
     gloss.setAttribute('fill', 'rgba(255,255,255,0.2)');
 
-    const label = document.createElementNS(ns, 'text');
-    label.setAttribute('x', String(cx));
-    label.setAttribute('y', String(h - 5));
-    label.setAttribute('text-anchor', 'middle');
-    label.setAttribute('fill', '#ccc');
-    this.applyLabelFont(label, 10);
-    label.textContent = this._widget?.properties.label ?? 'ALARM';
-    this._label = label;
-
     svg.appendChild(outerRing);
     svg.appendChild(light);
     svg.appendChild(gloss);
-    svg.appendChild(label);
     this.appendChild(svg);
+
+    if (this.shouldDisplayLabel('bottom')) {
+      this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'ALARM', 'bottom');
+      this.appendChild(this._labelElement);
+    }
+
     this.updateVisuals();
   }
 
@@ -83,10 +79,15 @@ export class AlarmWidget extends BaseWidget {
 
     if (anim?.effect === 'blink') {
       this.startBlink(color);
+    } else if (anim?.effect === 'pulse') {
+      this.startPulse(color);
+    } else {
+      this.stopBlink();
+      this.stopPulse();
     }
 
-    if (this._label) {
-      this._label.textContent = this._widget.properties.label as string ?? 'ALARM';
+    if (this._labelElement && this._widget) {
+      this._labelElement.textContent = this._widget.properties.label as string ?? 'ALARM';
     }
   }
 

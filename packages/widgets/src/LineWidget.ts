@@ -5,7 +5,6 @@ const PAD = 8;
 export class LineWidget extends BaseWidget {
   private _path: SVGPathElement | null = null;
   private _flowPath: SVGPathElement | null = null;
-  private _labelText: SVGTextElement | null = null;
   private _flowInterval: ReturnType<typeof setInterval> | null = null;
   private _flowOffset = 0;
 
@@ -85,18 +84,9 @@ export class LineWidget extends BaseWidget {
 
     // 라벨 (중간점)
     const labelText = String(p.label ?? '');
-    if (labelText) {
-      const mx = (lx1 + lx2) / 2;
-      const my = (ly1 + ly2) / 2;
-      const lbl = document.createElementNS(ns, 'text');
-      lbl.setAttribute('x', String(mx));
-      lbl.setAttribute('y', String(my - 5));
-      lbl.setAttribute('text-anchor', 'middle');
-      lbl.setAttribute('fill', color);
-      this.applyLabelFont(lbl, 11);
-      lbl.textContent = labelText;
-      this._labelText = lbl;
-      svg.appendChild(lbl);
+    if (labelText && this.shouldDisplayLabel('bottom')) {
+      this._labelElement = this.createLabelElement(labelText, 'bottom');
+      this.appendChild(this._labelElement);
     }
 
     this.appendChild(svg);
@@ -114,23 +104,25 @@ export class LineWidget extends BaseWidget {
 
     // 파이프 선은 항상 기본 색상으로 복원
     this._path.setAttribute('stroke', baseColor);
-    if (this._labelText) {
-      this._labelText.setAttribute('fill', baseColor);
-      this._labelText.textContent = String(this._widget.properties.label ?? '');
+    if (this._labelElement) {
+      this._labelElement.textContent = String(this._widget.properties.label ?? '');
     }
 
     if (anim?.effect === 'flow') {
       this.startFlow(anim.value);
+    } else if (anim?.effect === 'blink') {
+      this._path.setAttribute('stroke', color);
+      this.startBlink(color);
+    } else if (anim?.effect === 'pulse') {
+      this._path.setAttribute('stroke', color);
+      this.startPulse(color);
     } else if (anim) {
       this._path.setAttribute('stroke', color);
-      if (this._labelText) this._labelText.setAttribute('fill', color);
-      if (anim.effect === 'blink') this.startBlink(color);
     }
   }
 
   protected applyColor(color: string) {
     this._path?.setAttribute('stroke', color);
-    this._labelText?.setAttribute('fill', color);
   }
 
   private startFlow(color: string) {

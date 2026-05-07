@@ -1,6 +1,7 @@
 import React, { useRef, useCallback } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import type { HmiSchema } from '@wzhmi/core';
+import { WidgetRegistryDialog } from '../WidgetRegistry';
 
 function downloadJson(json: string, name: string) {
   const blob = new Blob([json], { type: 'application/json' });
@@ -16,6 +17,7 @@ export const Toolbar: React.FC = () => {
   const { fileName, selectedId, undo, redo, loadSchema, setFileName, removeWidget, duplicateWidget, historyIndex, history } = useEditorStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileHandleRef = useRef<any>(null);
+  const [showWidgetRegistry, setShowWidgetRegistry] = React.useState(false);
 
   const handleLoad = useCallback(async () => {
     if ('showOpenFilePicker' in window) {
@@ -128,6 +130,10 @@ export const Toolbar: React.FC = () => {
 
       <div style={divider} />
 
+      <button type="button" onClick={() => setShowWidgetRegistry(true)} style={{ ...btn, background: '#2a3a2a', color: '#8fa', borderColor: '#4a6' }} title="위젯 관리">
+        ⚙️ 위젯 관리
+      </button>
+
       <button type="button" onClick={undo} disabled={!canUndo} style={{ ...btn, opacity: canUndo ? 1 : 0.4 }} title="실행취소 (Ctrl+Z)">↩ 실행취소</button>
       <button type="button" onClick={redo} disabled={!canRedo} style={{ ...btn, opacity: canRedo ? 1 : 0.4 }} title="다시실행 (Ctrl+Y)">↪ 다시실행</button>
 
@@ -146,6 +152,14 @@ export const Toolbar: React.FC = () => {
           뷰어에서 열기 →
         </button>
       </div>
+
+      {/* 위젯 관리 다이얼로그 */}
+      {showWidgetRegistry && (
+        <WidgetRegistryDialog
+          isOpen={showWidgetRegistry}
+          onClose={() => setShowWidgetRegistry(false)}
+        />
+      )}
     </div>
   );
 };

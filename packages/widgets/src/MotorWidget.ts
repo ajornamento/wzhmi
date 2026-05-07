@@ -4,7 +4,6 @@ export class MotorWidget extends BaseWidget {
   private _svg: SVGSVGElement | null = null;
   private _body: SVGCircleElement | null = null;
   private _indicator: SVGLineElement | null = null;
-  private _label: SVGTextElement | null = null;
   private _rotateAnim: SVGAnimateTransformElement | null = null;
 
   protected render() {
@@ -70,21 +69,16 @@ export class MotorWidget extends BaseWidget {
     g.appendChild(line);
     g.appendChild(anim);
 
-    const text = document.createElementNS(ns, 'text');
-    text.setAttribute('x', String(cx));
-    text.setAttribute('y', String(h - 8));
-    text.setAttribute('text-anchor', 'middle');
-    text.setAttribute('fill', '#ccc');
-    this.applyLabelFont(text, 11);
-    text.textContent = this._widget?.properties.label ?? 'MOTOR';
-    this._label = text;
-
     svg.appendChild(circle);
     svg.appendChild(gloss);
     svg.appendChild(g);
-    svg.appendChild(text);
     this._svg = svg;
     this.appendChild(svg);
+
+    if (this.shouldDisplayLabel('bottom')) {
+      this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'MOTOR', 'bottom');
+      this.appendChild(this._labelElement);
+    }
 
     this.updateVisuals();
   }
@@ -99,6 +93,11 @@ export class MotorWidget extends BaseWidget {
 
     if (anim?.effect === 'blink') {
       this.startBlink(color);
+    } else if (anim?.effect === 'pulse') {
+      this.startPulse(color);
+    } else {
+      this.stopBlink();
+      this.stopPulse();
     }
 
     const isRunning = Number(this._value) === 1;
@@ -110,8 +109,8 @@ export class MotorWidget extends BaseWidget {
       }
     }
 
-    if (this._label) {
-      this._label.textContent = this._widget.properties.label as string ?? 'MOTOR';
+    if (this._labelElement && this._widget) {
+      this._labelElement.textContent = this._widget.properties.label as string ?? 'MOTOR';
     }
   }
 

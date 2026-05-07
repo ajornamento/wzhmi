@@ -2,7 +2,6 @@ import { BaseWidget } from './base/BaseWidget';
 
 export class ValveWidget extends BaseWidget {
   private _body: SVGPathElement | null = null;
-  private _label: SVGTextElement | null = null;
   private _indicator: SVGRectElement | null = null;
 
   protected render() {
@@ -63,22 +62,17 @@ export class ValveWidget extends BaseWidget {
     ind.setAttribute('rx', '2');
     this._indicator = ind;
 
-    const text = document.createElementNS(ns, 'text');
-    text.setAttribute('x', String(cx));
-    text.setAttribute('y', String(h - 5));
-    text.setAttribute('text-anchor', 'middle');
-    text.setAttribute('fill', '#ccc');
-    this.applyLabelFont(text, 11);
-    text.textContent = this._widget?.properties.label ?? 'VALVE';
-    this._label = text;
-
     svg.appendChild(pipeLeft);
     svg.appendChild(pipeRight);
     svg.appendChild(body);
     svg.appendChild(stem);
     svg.appendChild(ind);
-    svg.appendChild(text);
     this.appendChild(svg);
+
+    if (this.shouldDisplayLabel('bottom')) {
+      this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'VALVE', 'bottom');
+      this.appendChild(this._labelElement);
+    }
 
     this.updateVisuals();
   }
@@ -94,10 +88,15 @@ export class ValveWidget extends BaseWidget {
 
     if (anim?.effect === 'blink') {
       this.startBlink(color);
+    } else if (anim?.effect === 'pulse') {
+      this.startPulse(color);
+    } else {
+      this.stopBlink();
+      this.stopPulse();
     }
 
-    if (this._label) {
-      this._label.textContent = this._widget.properties.label as string ?? 'VALVE';
+    if (this._labelElement && this._widget) {
+      this._labelElement.textContent = this._widget.properties.label as string ?? 'VALVE';
     }
   }
 

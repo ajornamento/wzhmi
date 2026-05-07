@@ -76,6 +76,28 @@ export const PropertyPanel: React.FC<Props> = ({ widget }) => {
           <input style={inputStyle} value={String(widget.properties.label ?? '')}
             onChange={(e) => upd({ properties: { ...widget.properties, label: e.target.value } })} />
         </Field>
+        <Field label="라벨 표시 위치">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 6 }}>
+            {(['top', 'right', 'bottom', 'left'] as const).map((side) => (
+              <label key={side} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: '#ccc' }}>
+                <input
+                  type="checkbox"
+                  checked={widget.properties.labelVisibility?.[side] !== false}
+                  onChange={(e) => upd({
+                    properties: {
+                      ...widget.properties,
+                      labelVisibility: {
+                        ...widget.properties.labelVisibility,
+                        [side]: e.target.checked,
+                      },
+                    },
+                  })}
+                />
+                <span>{side === 'top' ? '위쪽' : side === 'bottom' ? '아래쪽' : side === 'left' ? '왼쪽' : '오른쪽'}</span>
+              </label>
+            ))}
+          </div>
+        </Field>
         {widget.type === 'TEXT_LABEL' && (
           <Field label="">
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
@@ -88,6 +110,23 @@ export const PropertyPanel: React.FC<Props> = ({ widget }) => {
             </label>
           </Field>
         )}
+        <Field label="라벨 색상">
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <input
+              type="color"
+              title="라벨 색상"
+              value={String(widget.properties.labelColor ?? '#cccccc')}
+              onChange={(e) => upd({ properties: { ...widget.properties, labelColor: e.target.value } })}
+              style={{ width: 36, height: 26, cursor: 'pointer', border: 'none', background: 'none', padding: 0 }}
+            />
+            <input
+              style={{ ...inputStyle, flex: 1 }}
+              value={String(widget.properties.labelColor ?? '')}
+              placeholder="기본 (#ccc)"
+              onChange={(e) => upd({ properties: { ...widget.properties, labelColor: e.target.value || undefined } })}
+            />
+          </div>
+        </Field>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: 6 }}>
           <Field label="폰트">
             <select

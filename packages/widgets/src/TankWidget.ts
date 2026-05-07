@@ -52,7 +52,7 @@ export class TankWidget extends BaseWidget {
     inlet.setAttribute('height', String(inletH));
     inlet.setAttribute('fill', '#555');
 
-    const outletH = h - (tankY + tankH);
+    const outletH = (h - (tankY + tankH)) * 0.6;
     const outlet = document.createElementNS(ns, 'rect');
     outlet.setAttribute('x', String(tankX + tankW / 2 - inletW / 2));
     outlet.setAttribute('y', String(tankY + tankH));
@@ -60,13 +60,18 @@ export class TankWidget extends BaseWidget {
     outlet.setAttribute('height', String(outletH));
     outlet.setAttribute('fill', '#555');
 
-    const label = document.createElementNS(ns, 'text');
-    label.setAttribute('x', String(w / 2));
-    label.setAttribute('y', String(tankY + tankH + outletH + 12));
-    label.setAttribute('text-anchor', 'middle');
-    label.setAttribute('fill', '#ccc');
-    this.applyLabelFont(label, 10);
-    label.textContent = this._widget?.properties.label ?? 'TANK';
+    let label: SVGTextElement | null = null;
+    if (this.shouldDisplayLabel('bottom')) {
+      label = document.createElementNS(ns, 'text');
+      label.setAttribute('x', String(w / 2));
+      label.setAttribute('y', String(h - 3));
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('fill', '#ccc');
+      this.applyLabelFont(label, 10);
+      const labelTransform = this.getCounterLabelRotation(w / 2, h / 2);
+      if (labelTransform) label.setAttribute('transform', labelTransform);
+      label.textContent = this._widget?.properties.label ?? 'TANK';
+    }
 
     const valueText = document.createElementNS(ns, 'text');
     valueText.setAttribute('x', String(tankX + tankW / 2));
@@ -83,9 +88,10 @@ export class TankWidget extends BaseWidget {
     svg.appendChild(fill);
     svg.appendChild(inlet);
     svg.appendChild(outlet);
-    svg.appendChild(label);
+    if (label) svg.appendChild(label);
     svg.appendChild(valueText);
     this.appendChild(svg);
+
     this.updateVisuals();
   }
 
@@ -109,7 +115,8 @@ export class TankWidget extends BaseWidget {
     }
 
     if (anim?.effect === 'blink') this.startBlink(color);
-    else this.stopBlink();
+    else if (anim?.effect === 'pulse') this.startPulse(color);
+    else this.stopBlink(), this.stopPulse();
   }
 
   protected applyColor(color: string) {

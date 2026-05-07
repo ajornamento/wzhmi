@@ -6,10 +6,12 @@ export type WidgetType =
   | 'TEXT_LABEL'
   | 'ALARM'
   | 'TANK'
-  | 'LINE';
+  | 'LINE'
+  | `CUSTOM_${string}`;
 
 export type LineStyle = 'solid' | 'dashed' | 'dotted';
 export type LineType = 'straight' | 'orthogonal' | 'curved';
+export type LabelSide = 'top' | 'right' | 'bottom' | 'left';
 
 export type DataType = 'INT' | 'FLOAT' | 'BOOL' | 'STRING';
 export type AnimationEffect = 'blink' | 'static' | 'pulse' | 'flow';
@@ -59,6 +61,7 @@ export interface WidgetActions {
 
 export interface WidgetProperties {
   label?: string;
+  labelVisibility?: Partial<Record<LabelSide, boolean>>;
   showTooltip?: boolean;
   showValue?: boolean;
   unit?: string;
@@ -66,6 +69,7 @@ export interface WidgetProperties {
   max?: number;
   fontFamily?: string;
   fontSize?: number;
+  labelColor?: string;
   previewValue?: string;
   // LINE 전용
   x1?: number;
@@ -96,6 +100,33 @@ export interface HmiSchema {
   v: string;
   canvas: HmiCanvas;
   widgets: Widget[];
+}
+
+// 위젯 메타데이터 인터페이스들
+export interface WidgetMetadata {
+  type: WidgetType;
+  label: string;
+  image: string;
+  description: string;
+  component?: any;
+  tag?: string;
+}
+
+export interface CustomWidgetMetadata extends WidgetMetadata {
+  id: string;
+  isBuiltin: boolean;
+  imageData?: string;        // Base64 이미지 데이터
+  imageUrl?: string;         // 이미지 URL
+  createdAt: number;
+  version: string;
+  author?: string;
+  defaultGeometry: {
+    width: number;
+    height: number;
+  };
+  supportedProperties: string[];
+  animationSupport: boolean;
+  bindingSupport: boolean;
 }
 
 export interface TagValue {

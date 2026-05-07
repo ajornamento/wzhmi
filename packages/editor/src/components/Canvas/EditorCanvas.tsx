@@ -37,6 +37,53 @@ function applyEditorStyle(el: BaseWidget, widget: Widget) {
   }
 }
 
+function createFallbackWidgetContainer(widget: Widget) {
+  const container = document.createElement('div');
+  container.style.position = 'absolute';
+  container.style.left = '0';
+  container.style.top = '0';
+  container.style.width = '100%';
+  container.style.height = '100%';
+  container.style.display = widget.styles.visible ? 'block' : 'none';
+  container.style.opacity = String(widget.styles.opacity);
+  container.style.backgroundColor = 'transparent';
+  container.style.overflow = 'hidden';
+
+  const imageData = widget.properties.imageData as string | undefined;
+  const imageUrl = widget.properties.imageUrl as string | undefined;
+  const imageSrc = imageData || imageUrl;
+
+  if (imageSrc) {
+    const imageLayer = document.createElement('div');
+    imageLayer.className = 'fallback-image-layer';
+    imageLayer.style.position = 'absolute';
+    imageLayer.style.top = '0';
+    imageLayer.style.left = '0';
+    imageLayer.style.width = '100%';
+    imageLayer.style.height = '100%';
+    imageLayer.style.backgroundImage = `url(${imageSrc})`;
+    imageLayer.style.backgroundSize = 'contain';
+    imageLayer.style.backgroundPosition = 'top center';
+    imageLayer.style.backgroundRepeat = 'no-repeat';
+    imageLayer.style.pointerEvents = 'none';
+    container.appendChild(imageLayer);
+  } else {
+    const label = document.createElement('div');
+    const rotation = widget.geometry.rotation || 0;
+    label.textContent = String(widget.properties.label || widget.type || '커스텀 위젯');
+    label.style.color = '#ddd';
+    label.style.fontSize = '12px';
+    label.style.textAlign = 'center';
+    label.style.padding = '8px';
+    label.style.pointerEvents = 'none';
+    label.style.transform = rotation ? `rotate(${-rotation}deg)` : '';
+    label.style.transformOrigin = 'center center';
+    container.appendChild(label);
+  }
+
+  return container;
+}
+
 const WidgetPreview: React.FC<{
   widget: Widget;
   isSelected: boolean;
@@ -52,17 +99,74 @@ const WidgetPreview: React.FC<{
     if (!container) return;
     container.innerHTML = '';
     const tagName = WIDGET_TAG_MAP[widget.type];
-    if (!tagName) return;
-    const el = document.createElement(tagName) as BaseWidget;
-    applyEditorStyle(el, widget);
-    container.appendChild(el);
-    webCompRef.current = el;
+    if (tagName) {
+      const el = document.createElement(tagName) as BaseWidget;
+      applyEditorStyle(el, widget);
+      container.appendChild(el);
+      webCompRef.current = el;
+    } else {
+      const fallback = createFallbackWidgetContainer(widget);
+      container.appendChild(fallback);
+      webCompRef.current = null;
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [widget.type]);
 
   useEffect(() => {
     const el = webCompRef.current;
-    if (!el) return;
+    if (!el) {
+      const container = elRef.current;
+      if (!container) return;
+      const fallback = container.firstElementChild as HTMLElement | null;
+      if (!fallback) return;
+      const imageData = widget.properties.imageData as string | undefined;
+      const imageUrl = widget.properties.imageUrl as string | undefined;
+      const imageSrc = imageData || imageUrl;
+      const imageLayer = fallback.querySelector('.fallback-image-layer') as HTMLElement | null;
+      const label = fallback.querySelector('div');
+      if (imageSrc) {
+        if (imageLayer) {
+          imageLayer.style.backgroundImage = `url(${imageSrc})`;
+        } else {
+          fallback.innerHTML = '';
+          const newImageLayer = document.createElement('div');
+          newImageLayer.className = 'fallback-image-layer';
+          newImageLayer.style.position = 'absolute';
+          newImageLayer.style.top = '0';
+          newImageLayer.style.left = '0';
+          newImageLayer.style.width = '100%';
+          newImageLayer.style.height = '100%';
+          newImageLayer.style.backgroundImage = `url(${imageSrc})`;
+          newImageLayer.style.backgroundSize = 'contain';
+          newImageLayer.style.backgroundPosition = 'top center';
+          newImageLayer.style.backgroundRepeat = 'no-repeat';
+          newImageLayer.style.pointerEvents = 'none';
+          fallback.appendChild(newImageLayer);
+        }
+      } else {
+        if (imageLayer) {
+          fallback.removeChild(imageLayer);
+        }
+        const rotation = widget.geometry.rotation || 0;
+        if (label) {
+          label.textContent = String(widget.properties.label || widget.type || '커스텀 위젯');
+          label.style.transform = rotation ? `rotate(${-rotation}deg)` : '';
+          label.style.transformOrigin = 'center center';
+        } else {
+          const newLabel = document.createElement('div');
+          newLabel.textContent = String(widget.properties.label || widget.type || '커스텀 위젯');
+          newLabel.style.color = '#ddd';
+          newLabel.style.fontSize = '12px';
+          newLabel.style.textAlign = 'center';
+          newLabel.style.padding = '8px';
+          newLabel.style.pointerEvents = 'none';
+          newLabel.style.transform = rotation ? `rotate(${-rotation}deg)` : '';
+          newLabel.style.transformOrigin = 'center center';
+          fallback.appendChild(newLabel);
+        }
+      }
+      return;
+    }
     applyEditorStyle(el, widget);
   }, [widget]);
 
@@ -153,7 +257,9 @@ export const EditorCanvas: React.FC = () => {
       e.preventDefault();
       const type = e.dataTransfer.getData('widget-type') as WidgetType;
       if (!type) return;
-      addWidget(type);
+      const metadataJson = e.dataTransfer.getData('widget-metadata');
+      const customProps = metadataJson ? JSON.parse(metadataJson) : undefined;
+      addWidget(type, customProps);
     },
     [addWidget]
   );

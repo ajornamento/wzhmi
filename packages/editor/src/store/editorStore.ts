@@ -14,7 +14,7 @@ interface EditorState {
 
   setCanvas: (canvas: Partial<HmiSchema['canvas']>) => void;
   setCanvasScale: (scale: number) => void;
-  addWidget: (type: WidgetType) => void;
+  addWidget: (type: WidgetType, customProperties?: Partial<Widget['properties']>) => void;
   removeWidget: (id: string) => void;
   updateWidget: (id: string, patch: Partial<Widget>) => void;
   selectWidget: (id: string | null) => void;
@@ -61,9 +61,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     return pushHistory(s, newSchema);
   }),
 
-  addWidget: (type) => set((s) => {
+  addWidget: (type, customProperties) => set((s) => {
     const id = genId();
     const widget = defaultWidget(type, id);
+    if (customProperties) {
+      widget.properties = { ...widget.properties, ...customProperties };
+    }
     const snapTo10 = (v: number) => Math.round(v / 10) * 10;
     const newX = snapTo10(100 + Math.random() * 200);
     const newY = snapTo10(100 + Math.random() * 200);

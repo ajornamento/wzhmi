@@ -60,51 +60,48 @@ export class GaugeWidget extends BaseWidget {
     needle.setAttribute('transform', `rotate(-135, ${cx}, ${cy})`);
     this._needle = needle;
 
-    const label = document.createElementNS(ns, 'text');
-    label.setAttribute('x', String(cx));
-    label.setAttribute('y', String(cy + r * 0.35));
-    label.setAttribute('text-anchor', 'middle');
-    label.setAttribute('fill', '#999');
-    this.applyLabelFont(label, 10);
-    label.textContent = this._widget?.properties.label ?? 'GAUGE';
-
     const valueText = document.createElementNS(ns, 'text');
     valueText.setAttribute('x', String(cx));
-    valueText.setAttribute('y', String(cy + r * 0.65));
+    valueText.setAttribute('y', String(cy + r + 20));
     valueText.setAttribute('text-anchor', 'middle');
-    valueText.setAttribute('font-size', String(Math.max(10, (this._widget?.properties.fontSize ?? 13))));
-    valueText.setAttribute('font-family', this.getLabelFontFamily());
-    valueText.setAttribute('font-weight', 'bold');
     valueText.setAttribute('fill', '#fff');
+    valueText.setAttribute('font-size', '12');
+    valueText.setAttribute('font-family', 'Arial, sans-serif');
     valueText.textContent = '0';
-    this._valueText = valueText;
 
     const minText = document.createElementNS(ns, 'text');
-    minText.setAttribute('x', String(cx - r * 0.95));
-    minText.setAttribute('y', String(cy + 14));
+    minText.setAttribute('x', String(cx - r));
+    minText.setAttribute('y', String(cy + r + 15));
     minText.setAttribute('text-anchor', 'middle');
-    minText.setAttribute('font-size', '9');
-    minText.setAttribute('fill', '#888');
-    minText.textContent = String(this._widget?.properties.min ?? 0);
+    minText.setAttribute('fill', '#ccc');
+    minText.setAttribute('font-size', '10');
+    minText.setAttribute('font-family', 'Arial, sans-serif');
+    minText.textContent = '0';
 
     const maxText = document.createElementNS(ns, 'text');
-    maxText.setAttribute('x', String(cx + r * 0.95));
-    maxText.setAttribute('y', String(cy + 14));
+    maxText.setAttribute('x', String(cx + r));
+    maxText.setAttribute('y', String(cy + r + 15));
     maxText.setAttribute('text-anchor', 'middle');
-    maxText.setAttribute('font-size', '9');
-    maxText.setAttribute('fill', '#888');
-    maxText.textContent = String(this._widget?.properties.max ?? 100);
+    maxText.setAttribute('fill', '#ccc');
+    maxText.setAttribute('font-size', '10');
+    maxText.setAttribute('font-family', 'Arial, sans-serif');
+    maxText.textContent = '100';
 
     svg.appendChild(bg);
     svg.appendChild(track);
     svg.appendChild(arc);
     svg.appendChild(needle);
     svg.appendChild(centerDot);
-    svg.appendChild(label);
     svg.appendChild(valueText);
     svg.appendChild(minText);
     svg.appendChild(maxText);
     this.appendChild(svg);
+
+    if (this.shouldDisplayLabel('bottom')) {
+      this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'GAUGE', 'bottom');
+      this.appendChild(this._labelElement);
+    }
+
     this.updateVisuals();
   }
 
@@ -143,6 +140,15 @@ export class GaugeWidget extends BaseWidget {
       this._arc.setAttribute('stroke', color);
       if (pct > 0) {
         this._arc.setAttribute('d', this.describeArc(cx, cy, r, -135, deg));
+      }
+
+      if (anim?.effect === 'blink') {
+        this.startBlink(color);
+      } else if (anim?.effect === 'pulse') {
+        this.startPulse(color);
+      } else {
+        this.stopBlink();
+        this.stopPulse();
       }
     }
 

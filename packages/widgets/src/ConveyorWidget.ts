@@ -3,7 +3,6 @@ import { BaseWidget } from './base/BaseWidget';
 export class ConveyorWidget extends BaseWidget {
   private _belt: SVGRectElement | null = null;
   private _animElem: SVGAnimateElement | null = null;
-  private _label: SVGTextElement | null = null;
   private _patternId = '';
 
   protected render() {
@@ -94,22 +93,18 @@ export class ConveyorWidget extends BaseWidget {
     botLine.setAttribute('stroke', '#333');
     botLine.setAttribute('stroke-width', '2');
 
-    const label = document.createElementNS(ns, 'text');
-    label.setAttribute('x', String(w / 2));
-    label.setAttribute('y', String(h - 3));
-    label.setAttribute('text-anchor', 'middle');
-    label.setAttribute('fill', '#ccc');
-    this.applyLabelFont(label, 10);
-    label.textContent = this._widget?.properties.label ?? 'CONVEYOR';
-    this._label = label;
-
     svg.appendChild(roller1);
     svg.appendChild(roller2);
     svg.appendChild(belt);
     svg.appendChild(topLine);
     svg.appendChild(botLine);
-    svg.appendChild(label);
     this.appendChild(svg);
+
+    if (this.shouldDisplayLabel('bottom')) {
+      this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'CONVEYOR', 'bottom');
+      this.appendChild(this._labelElement);
+    }
+
     this.updateVisuals();
   }
 
@@ -127,9 +122,10 @@ export class ConveyorWidget extends BaseWidget {
 
     const anim = this.getActiveAnimation();
     const color = anim ? anim.value : this._widget.styles.baseColor;
-    if (this._label) this._label.textContent = this._widget.properties.label as string ?? 'CONVEYOR';
+    if (this._labelElement && this._widget) this._labelElement.textContent = this._widget.properties.label as string ?? 'CONVEYOR';
     if (anim?.effect === 'blink') this.startBlink(color);
-    else this.stopBlink();
+    else if (anim?.effect === 'pulse') this.startPulse(color);
+    else this.stopBlink(), this.stopPulse();
   }
 
   protected applyColor(_color: string) {}

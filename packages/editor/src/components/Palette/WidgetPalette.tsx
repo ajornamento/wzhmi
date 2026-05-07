@@ -1,8 +1,10 @@
-import React from 'react';
-import type { WidgetType } from '@wzhmi/core';
+import React, { useState, useEffect } from 'react';
+import type { WidgetType, CustomWidgetMetadata } from '@wzhmi/core';
 import { useEditorStore } from '../../store/editorStore';
+import { customWidgetStorage } from '../../services/customWidgetStorage';
+import { WidgetRegistryDialog } from '../WidgetRegistry';
 
-const WIDGET_DEFS: Array<{ type: WidgetType; label: string; icon: string; desc: string }> = [
+const BUILTIN_WIDGETS: Array<{ type: WidgetType; label: string; icon: string; desc: string }> = [
   { type: 'MOTOR', label: '모터', icon: '⚙️', desc: '회전 모터 상태 표시' },
   { type: 'VALVE', label: '밸브', icon: '🔧', desc: '밸브 개/폐 상태' },
   { type: 'GAUGE', label: '계기판', icon: '📊', desc: '수치 게이지 표시' },
@@ -15,10 +17,48 @@ const WIDGET_DEFS: Array<{ type: WidgetType; label: string; icon: string; desc: 
 
 export const WidgetPalette: React.FC = () => {
   const { addWidget } = useEditorStore();
+  const [customWidgets, setCustomWidgets] = useState<CustomWidgetMetadata[]>([]);
+  const [showRegistry, setShowRegistry] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleDragStart = (e: React.DragEvent, type: WidgetType) => {
+  useEffect(() => {
+    loadCustomWidgets();
+  }, []);
+
+  const loadCustomWidgets = async () => {
+    setLoading(true);
+    try {
+      const widgets = await customWidgetStorage.loadAllCustomWidgets();
+      setCustomWidgets(widgets);
+    } catch (error) {
+      console.error('Failed to load custom widgets:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent, type: WidgetType, metadata?: CustomWidgetMetadata) => {
     e.dataTransfer.setData('widget-type', type);
+    if (metadata) {
+      e.dataTransfer.setData('widget-metadata', JSON.stringify({
+        imageData: metadata.imageData,
+        imageUrl: metadata.imageUrl,
+        customWidgetId: metadata.id,
+        label: metadata.label,
+      }));
+    }
     e.dataTransfer.effectAllowed = 'copy';
+  };
+
+  const handleCustomWidgetSave = (metadata: CustomWidgetMetadata) => {
+    setCustomWidgets(prev => {
+      const existing = prev.find(w => w.id === metadata.id);
+      if (existing) {
+        return prev.map(w => w.id === metadata.id ? metadata : w);
+      } else {
+        return [...prev, metadata];
+      }
+    });
   };
 
   return (
@@ -30,40 +70,136 @@ export const WidgetPalette: React.FC = () => {
         위젯 팔레트
       </div>
       <div style={{ overflowY: 'auto', flex: 1, padding: 6 }}>
-        {WIDGET_DEFS.map(({ type, label, icon, desc }) => (
-          <div
-            key={type}
-            draggable
-            onDragStart={(e) => handleDragStart(e, type)}
-            onClick={() => addWidget(type)}
-            title={desc}
+        {/* 기본 위젯 섹션 */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 10, color: '#666', marginBottom: 6, fontWeight: 'bold' }}>
+            기본 위젯
+          </div>
+          {BUILTIN_WIDGETS.map(({ type, label, icon, desc }) => (
+            <div
+              key={type}
+              draggable
+              onDragStart={(e) => handleDragStart(e, type)}
+              onClick={() => addWidget(type)}
+              title={desc}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '7px 8px', marginBottom: 4,
+                background: '#242436', border: '1px solid #333',
+                borderRadius: 4, cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLDivElement).style.background = '#2e2e50';
+                (e.currentTarget as HTMLDivElement).style.borderColor = '#5566aa';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLDivElement).style.background = '#242436';
+                (e.currentTarget as HTMLDivElement).style.borderColor = '#333';
+              }}
+            >
+              <span style={{ fontSize: 18 }}>{icon}</span>
+              <div>
+                <div style={{ fontSize: 12, color: '#ddd' }}>{label}</div>
+                <div style={{ fontSize: 10, color: '#666' }}>{type}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 커스텀 위젯 섹션 */}
+        {customWidgets.length > 0 && (
+          <div>
+            <div style={{ fontSize: 10, color: '#666', marginBottom: 6, fontWeight: 'bold' }}>
+              커스텀 위젯 ({customWidgets.length})
+            </div>
+            {customWidgets.map((widget) => (
+              <div
+                key={widget.id}
+                draggable
+                onDragStart={(e) => handleDragStart(e, widget.type, widget)}
+                onClick={() => addWidget(widget.type, {
+                  imageData: widget.imageData,
+                  imageUrl: widget.imageUrl,
+                  customWidgetId: widget.id,
+                  label: widget.label,
+                })}
+                title={widget.description}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '7px 8px', marginBottom: 4,
+                  background: '#242436', border: '1px solid #333',
+                  borderRadius: 4, cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.background = '#2e2e50';
+                  (e.currentTarget as HTMLDivElement).style.borderColor = '#5566aa';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.background = '#242436';
+                  (e.currentTarget as HTMLDivElement).style.borderColor = '#333';
+                }}
+              >
+                <div
+                  style={{
+                    width: 24, height: 24, borderRadius: 3,
+                    backgroundColor: '#333', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {widget.imageData ? (
+                    <img
+                      src={widget.imageData}
+                      alt={widget.label}
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: 12 }}>📦</span>
+                  )}
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: '#ddd' }}>{widget.label}</div>
+                  <div style={{ fontSize: 10, color: '#666' }}>{widget.type}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 위젯 관리 버튼 */}
+        <div style={{ marginTop: 12 }}>
+          <button
+            onClick={() => setShowRegistry(true)}
             style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '7px 8px', marginBottom: 4,
-              background: '#242436', border: '1px solid #333',
-              borderRadius: 4, cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLDivElement).style.background = '#2e2e50';
-              (e.currentTarget as HTMLDivElement).style.borderColor = '#5566aa';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLDivElement).style.background = '#242436';
-              (e.currentTarget as HTMLDivElement).style.borderColor = '#333';
+              width: '100%',
+              padding: '8px 12px',
+              backgroundColor: '#4a5fd5',
+              color: 'white',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontSize: 12,
+              fontWeight: 'bold',
             }}
           >
-            <span style={{ fontSize: 18 }}>{icon}</span>
-            <div>
-              <div style={{ fontSize: 12, color: '#ddd' }}>{label}</div>
-              <div style={{ fontSize: 10, color: '#666' }}>{type}</div>
-            </div>
-          </div>
-        ))}
+            ⚙️ 위젯 관리
+          </button>
+        </div>
       </div>
       <div style={{ padding: '6px 10px', borderTop: '1px solid #333', fontSize: 10, color: '#555' }}>
         클릭 또는 드래그로 추가
       </div>
+
+      {/* 위젯 등록 다이얼로그 */}
+      {showRegistry && (
+        <WidgetRegistryDialog
+          isOpen={showRegistry}
+          onClose={() => setShowRegistry(false)}
+          onSave={handleCustomWidgetSave}
+        />
+      )}
     </div>
   );
 };

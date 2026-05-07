@@ -13,10 +13,10 @@ export function evaluateCondition(condition: string, value: number | string | bo
       const rhs = m.trim();
       return String(value) !== rhs && numVal !== Number(rhs);
     }],
-    [/^>\s*(.+)$/, (m) => numVal > Number(m.trim())],
     [/^>=\s*(.+)$/, (m) => numVal >= Number(m.trim())],
-    [/^<\s*(.+)$/, (m) => numVal < Number(m.trim())],
+    [/^>\s*(.+)$/, (m) => numVal > Number(m.trim())],
     [/^<=\s*(.+)$/, (m) => numVal <= Number(m.trim())],
+    [/^<\s*(.+)$/, (m) => numVal < Number(m.trim())],
     [/^between\s+(\S+)\s+and\s+(\S+)$/i, (m) => {
       const parts = m.split(/\s+and\s+/i);
       return numVal >= Number(parts[0]) && numVal <= Number(parts[1]);
