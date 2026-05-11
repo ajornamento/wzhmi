@@ -58,6 +58,10 @@ export abstract class BaseWidget extends HTMLElement {
     });
   }
 
+  protected getLabelSide(): 'top' | 'right' | 'bottom' | 'left' {
+    return (this._widget?.properties.labelSide as 'top' | 'right' | 'bottom' | 'left') ?? 'bottom';
+  }
+
   protected shouldDisplayLabel(side: 'top' | 'right' | 'bottom' | 'left'): boolean {
     const visibility = this._widget?.properties.labelVisibility as Partial<Record<'top' | 'right' | 'bottom' | 'left', boolean>> | undefined;
     if (!visibility) return true;
@@ -87,10 +91,6 @@ export abstract class BaseWidget extends HTMLElement {
     
     if (!this._widget) return label;
     
-    const { x, y, width, height } = this._widget.geometry;
-    const labelGap = 4;
-    
-    // 라벨 위치를 위젯 상대 좌표로 계산 (위젯 경계 외부)
     switch (side) {
       case 'top':
         label.style.left = '50%';
@@ -103,12 +103,12 @@ export abstract class BaseWidget extends HTMLElement {
         label.style.transform = rotation ? `translateX(-50%) rotate(${-rotation}deg)` : 'translateX(-50%)';
         break;
       case 'left':
-        label.style.left = '-8px';
+        label.style.right = 'calc(100% + 4px)';
         label.style.top = '50%';
-        label.style.transform = rotation ? `translateX(-100%) translateY(-50%) rotate(${-rotation}deg)` : 'translateX(-100%) translateY(-50%)';
+        label.style.transform = rotation ? `translateY(-50%) rotate(${-rotation}deg)` : 'translateY(-50%)';
         break;
       case 'right':
-        label.style.right = '-8px';
+        label.style.left = 'calc(100% + 4px)';
         label.style.top = '50%';
         label.style.transform = rotation ? `translateY(-50%) rotate(${-rotation}deg)` : 'translateY(-50%)';
         break;

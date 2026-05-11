@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 
 const PRESETS: Array<{ label: string; w: number; h: number }> = [
@@ -36,6 +36,24 @@ export const CanvasSettingsPanel: React.FC = () => {
   const { schema, setCanvas, canvasScale } = useEditorStore();
   const { canvas } = schema;
 
+  const [localW, setLocalW] = useState(String(canvas.width));
+  const [localH, setLocalH] = useState(String(canvas.height));
+
+  useEffect(() => { setLocalW(String(canvas.width)); }, [canvas.width]);
+  useEffect(() => { setLocalH(String(canvas.height)); }, [canvas.height]);
+
+  const commitW = useCallback((raw: string) => {
+    const val = Math.max(100, Math.min(7680, parseInt(raw, 10) || 100));
+    setLocalW(String(val));
+    setCanvas({ width: val });
+  }, [setCanvas]);
+
+  const commitH = useCallback((raw: string) => {
+    const val = Math.max(100, Math.min(7680, parseInt(raw, 10) || 100));
+    setLocalH(String(val));
+    setCanvas({ height: val });
+  }, [setCanvas]);
+
   const currentRatio = canvas.width / canvas.height;
 
   return (
@@ -52,8 +70,10 @@ export const CanvasSettingsPanel: React.FC = () => {
               max={7680}
               step={10}
               style={inputStyle}
-              value={canvas.width}
-              onChange={(e) => setCanvas({ width: Math.max(100, Number(e.target.value)) })}
+              value={localW}
+              onChange={(e) => setLocalW(e.target.value)}
+              onBlur={(e) => commitW(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { commitW(e.currentTarget.value); e.currentTarget.blur(); } }}
             />
           </div>
           <span style={{ textAlign: 'center', color: '#555', fontSize: 12 }}>×</span>
@@ -65,8 +85,10 @@ export const CanvasSettingsPanel: React.FC = () => {
               max={7680}
               step={10}
               style={inputStyle}
-              value={canvas.height}
-              onChange={(e) => setCanvas({ height: Math.max(100, Number(e.target.value)) })}
+              value={localH}
+              onChange={(e) => setLocalH(e.target.value)}
+              onBlur={(e) => commitH(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { commitH(e.currentTarget.value); e.currentTarget.blur(); } }}
             />
           </div>
         </div>
@@ -101,7 +123,7 @@ export const CanvasSettingsPanel: React.FC = () => {
       <div style={{ marginBottom: 14 }}>
         <div style={sectionTitle}>배경</div>
         <label style={{ fontSize: 10, color: '#888', display: 'block', marginBottom: 2 }}>배경색</label>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
           <input
             type="color"
             value={canvas.backgroundColor}
@@ -114,6 +136,68 @@ export const CanvasSettingsPanel: React.FC = () => {
             onChange={(e) => setCanvas({ backgroundColor: e.target.value })}
           />
         </div>
+
+        <label style={{ fontSize: 10, color: '#888', display: 'block', marginBottom: 4 }}>배경 이미지</label>
+        {canvas.backgroundImage ? (
+          <>
+            <div style={{
+              width: '100%', height: 72, borderRadius: 4, marginBottom: 6,
+              border: '1px solid #333',
+              backgroundImage: `url(${canvas.backgroundImage})`,
+              backgroundSize: canvas.backgroundImageFit ?? 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              backgroundColor: '#111',
+            }} />
+            <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
+              <select
+                title="이미지 맞춤"
+                style={{ ...inputStyle, flex: 1 }}
+                value={canvas.backgroundImageFit ?? 'cover'}
+                onChange={(e) => setCanvas({ backgroundImageFit: e.target.value as 'cover' | 'contain' | 'fill' })}
+              >
+                <option value="cover">꽉 채우기 (cover)</option>
+                <option value="contain">전체 보기 (contain)</option>
+                <option value="fill">늘리기 (fill)</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => setCanvas({ backgroundImage: undefined, backgroundImageFit: undefined })}
+                style={{ padding: '3px 8px', fontSize: 11, background: '#3a1a1a', color: '#f66', border: '1px solid #5a2a2a', borderRadius: 3, cursor: 'pointer', whiteSpace: 'nowrap' }}
+              >
+                제거
+              </button>
+            </div>
+          </>
+        ) : null}
+
+        <label style={{ display: 'block', cursor: 'pointer' }}>
+          <input
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = (ev) => setCanvas({ backgroundImage: ev.target?.result as string });
+              reader.readAsDataURL(file);
+              e.target.value = '';
+            }}
+          />
+          <div style={{ ...inputStyle, textAlign: 'center', padding: '6px', cursor: 'pointer', color: '#88aacc', borderStyle: 'dashed' }}>
+            {canvas.backgroundImage ? '다른 파일로 교체' : '파일 업로드'}
+          </div>
+        </label>
+
+        {!canvas.backgroundImage && (
+          <input
+            style={{ ...inputStyle, marginTop: 4 }}
+            placeholder="또는 이미지 URL 입력"
+            onBlur={(e) => { if (e.target.value) setCanvas({ backgroundImage: e.target.value }); }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && e.currentTarget.value) { setCanvas({ backgroundImage: e.currentTarget.value }); e.currentTarget.value = ''; } }}
+          />
+        )}
       </div>
 
       {/* 안내 */}

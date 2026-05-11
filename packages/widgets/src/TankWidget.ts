@@ -60,18 +60,6 @@ export class TankWidget extends BaseWidget {
     outlet.setAttribute('height', String(outletH));
     outlet.setAttribute('fill', '#555');
 
-    let label: SVGTextElement | null = null;
-    if (this.shouldDisplayLabel('bottom')) {
-      label = document.createElementNS(ns, 'text');
-      label.setAttribute('x', String(w / 2));
-      label.setAttribute('y', String(h - 3));
-      label.setAttribute('text-anchor', 'middle');
-      label.setAttribute('fill', '#ccc');
-      this.applyLabelFont(label, 10);
-      const labelTransform = this.getCounterLabelRotation(w / 2, h / 2);
-      if (labelTransform) label.setAttribute('transform', labelTransform);
-      label.textContent = this._widget?.properties.label ?? 'TANK';
-    }
 
     const valueText = document.createElementNS(ns, 'text');
     valueText.setAttribute('x', String(tankX + tankW / 2));
@@ -88,15 +76,19 @@ export class TankWidget extends BaseWidget {
     svg.appendChild(fill);
     svg.appendChild(inlet);
     svg.appendChild(outlet);
-    if (label) svg.appendChild(label);
     svg.appendChild(valueText);
     this.appendChild(svg);
+
+    this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'TANK', this.getLabelSide());
+    this.appendChild(this._labelElement);
 
     this.updateVisuals();
   }
 
   protected updateVisuals() {
     if (!this._widget || !this._fill) return;
+    this.stopBlink();
+    this.stopPulse();
     const min = Number(this._widget.properties.min ?? 0);
     const max = Number(this._widget.properties.max ?? 100);
     const val = Math.min(Math.max(Number(this._value), min), max);
@@ -112,6 +104,10 @@ export class TankWidget extends BaseWidget {
 
     if (this._valueText) {
       this._valueText.textContent = this.getDisplayValue();
+    }
+
+    if (this._labelElement) {
+      this._labelElement.textContent = this._widget.properties.label as string ?? 'TANK';
     }
 
     if (anim?.effect === 'blink') this.startBlink(color);

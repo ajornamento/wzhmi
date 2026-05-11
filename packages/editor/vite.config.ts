@@ -5,6 +5,7 @@ import path from 'path';
 export default defineConfig({
   plugins: [react()],
   resolve: {
+    extensions: ['.tsx', '.ts', '.mts', '.jsx', '.mjs', '.js', '.json'],
     alias: {
       '@wzhmi/core': path.resolve(__dirname, '../../packages/core/src/index.ts'),
       '@wzhmi/widgets': path.resolve(__dirname, '../../packages/widgets/src/index.ts'),

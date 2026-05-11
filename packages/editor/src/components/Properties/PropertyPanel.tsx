@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import type { Widget, Animation } from '@wzhmi/core';
 import { useEditorStore } from '../../store/editorStore';
 import { useServerTags } from '../../hooks/useServerTags';
@@ -33,6 +33,11 @@ interface Props { widget: Widget }
 export const PropertyPanel: React.FC<Props> = ({ widget }) => {
   const { updateWidget } = useEditorStore();
   const serverTags = useServerTags();
+
+  const [localStrokeWidth, setLocalStrokeWidth] = useState(String(widget.properties.strokeWidth ?? 3));
+  useEffect(() => {
+    setLocalStrokeWidth(String(widget.properties.strokeWidth ?? 3));
+  }, [widget.properties.strokeWidth]);
 
   const upd = useCallback((patch: Partial<Widget>) => {
     updateWidget(widget.id, patch);
@@ -76,20 +81,18 @@ export const PropertyPanel: React.FC<Props> = ({ widget }) => {
           <input style={inputStyle} value={String(widget.properties.label ?? '')}
             onChange={(e) => upd({ properties: { ...widget.properties, label: e.target.value } })} />
         </Field>
-        <Field label="라벨 표시 위치">
+        <Field label="라벨 위치">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 6 }}>
             {(['top', 'right', 'bottom', 'left'] as const).map((side) => (
               <label key={side} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, color: '#ccc' }}>
                 <input
-                  type="checkbox"
-                  checked={widget.properties.labelVisibility?.[side] !== false}
-                  onChange={(e) => upd({
+                  type="radio"
+                  name={`label-side-${widget.id}`}
+                  checked={(widget.properties.labelSide ?? 'bottom') === side}
+                  onChange={() => upd({
                     properties: {
                       ...widget.properties,
-                      labelVisibility: {
-                        ...widget.properties.labelVisibility,
-                        [side]: e.target.checked,
-                      },
+                      labelSide: side,
                     },
                   })}
                 />
@@ -153,6 +156,111 @@ export const PropertyPanel: React.FC<Props> = ({ widget }) => {
           </Field>
         </div>
       </div>
+
+      {widget.type === 'TEXT_LABEL' && (
+        <div style={{ ...sectionStyle }}>
+          <div style={sectionTitle}>도형</div>
+          <Field label="도형 종류">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
+              {([
+                { value: 'rect',     label: '사각형',    sym: '▭' },
+                { value: 'rounded',  label: '둥근사각형', sym: '▢' },
+                { value: 'ellipse',  label: '타원형',    sym: '◯' },
+                { value: 'triangle', label: '삼각형',    sym: '△' },
+                { value: 'diamond',  label: '마름모',    sym: '◇' },
+                { value: 'freeform', label: '자유형',    sym: '✦' },
+              ] as const).map(({ value, label, sym }) => {
+                const active = (widget.properties.shape ?? 'rect') === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    title={label}
+                    onClick={() => upd({ properties: { ...widget.properties, shape: value } })}
+                    style={{
+                      padding: '5px 2px', fontSize: 10, cursor: 'pointer', borderRadius: 3,
+                      background: active ? '#1e3050' : '#1e1e2e',
+                      color: active ? '#7af' : '#aab',
+                      border: `1px solid ${active ? '#3a6aaa' : '#334'}`,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                    }}
+                  >
+                    <span style={{ fontSize: 14 }}>{sym}</span>
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+
+          <Field label="외곽선 두께 (viewBox 단위)">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <input
+                type="range" min={0} max={20} step={0.5}
+                title="외곽선 두께 슬라이더"
+                style={{ flex: 1 }}
+                value={Number(widget.properties.strokeWidth ?? 3)}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setLocalStrokeWidth(String(v));
+                  upd({ properties: { ...widget.properties, strokeWidth: v } });
+                }}
+              />
+              <input
+                type="number" min={0} max={20} step={0.5}
+                title="외곽선 두께 입력"
+                style={{ ...inputStyle, width: 52, textAlign: 'right' }}
+                value={localStrokeWidth}
+                onChange={(e) => setLocalStrokeWidth(e.target.value)}
+                onBlur={(e) => {
+                  const v = Math.max(0, Math.min(20, Number(e.target.value) || 0));
+                  setLocalStrokeWidth(String(v));
+                  upd({ properties: { ...widget.properties, strokeWidth: v } });
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const v = Math.max(0, Math.min(20, Number(e.currentTarget.value) || 0));
+                    setLocalStrokeWidth(String(v));
+                    upd({ properties: { ...widget.properties, strokeWidth: v } });
+                    e.currentTarget.blur();
+                  }
+                }}
+              />
+            </div>
+          </Field>
+
+          {(widget.properties.shape ?? 'rect') === 'rounded' && (
+            <Field label="모서리 반경">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="range" min={0} max={50} step={1}
+                  style={{ flex: 1 }}
+                  value={Number(widget.properties.cornerRadius ?? 10)}
+                  onChange={(e) => upd({ properties: { ...widget.properties, cornerRadius: Number(e.target.value) } })}
+                />
+                <span style={{ fontSize: 11, color: '#aaa', minWidth: 20, textAlign: 'right' }}>
+                  {Number(widget.properties.cornerRadius ?? 10)}
+                </span>
+              </div>
+            </Field>
+          )}
+
+          {(widget.properties.shape ?? 'rect') === 'freeform' && (
+            <Field label="꼭짓점 (100×100 좌표)">
+              <textarea
+                title="자유형 꼭짓점 좌표"
+                style={{ ...inputStyle, height: 60, resize: 'vertical', fontFamily: 'monospace', fontSize: 11 }}
+                placeholder={'예: 50,2 96,26 96,74 50,98 4,74 4,26'}
+                value={String(widget.properties.shapePoints ?? '50,2 96,26 96,74 50,98 4,74 4,26')}
+                onChange={(e) => upd({ properties: { ...widget.properties, shapePoints: e.target.value } })}
+              />
+              <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>
+                x,y 쌍을 공백으로 구분. 범위: 0~100
+              </div>
+            </Field>
+          )}
+        </div>
+      )}
 
       <div style={{ ...sectionStyle }}>
         <div style={sectionTitle}>위치 및 크기</div>
@@ -392,6 +500,23 @@ export const PropertyPanel: React.FC<Props> = ({ widget }) => {
               value={Number(widget.properties.flowSpeed ?? 2)}
               onChange={(e) => upd({ properties: { ...widget.properties, flowSpeed: Number(e.target.value) } })}
             />
+          </Field>
+          <Field label="관절">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, color: '#aaa' }}>
+                {((widget.properties.waypoints as unknown[]) ?? []).length}개
+              </span>
+              <span style={{ fontSize: 11, color: '#666' }}>· 캔버스에서 더블클릭으로 추가/제거</span>
+              {((widget.properties.waypoints as unknown[]) ?? []).length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => upd({ properties: { ...widget.properties, waypoints: [] } })}
+                  style={{ marginLeft: 'auto', fontSize: 10, background: '#3a1a1a', color: '#f66', border: '1px solid #5a2a2a', borderRadius: 3, padding: '2px 6px', cursor: 'pointer' }}
+                >
+                  모두 제거
+                </button>
+              )}
+            </div>
           </Field>
         </div>
       )}

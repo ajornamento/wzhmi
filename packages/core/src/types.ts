@@ -21,6 +21,7 @@ export interface HmiCanvas {
   height: number;
   backgroundColor: string;
   backgroundImage?: string;
+  backgroundImageFit?: 'cover' | 'contain' | 'fill';
 }
 
 export interface Geometry {
@@ -61,9 +62,15 @@ export interface WidgetActions {
 
 export interface WidgetProperties {
   label?: string;
+  labelSide?: LabelSide;
   labelVisibility?: Partial<Record<LabelSide, boolean>>;
+  waypoints?: Array<{ x: number; y: number }>;
+  shape?: 'rect' | 'rounded' | 'ellipse' | 'triangle' | 'diamond' | 'freeform';
+  cornerRadius?: number;
+  shapePoints?: string;
   showTooltip?: boolean;
   showValue?: boolean;
+  strokeWidth?: number;
   unit?: string;
   min?: number;
   max?: number;

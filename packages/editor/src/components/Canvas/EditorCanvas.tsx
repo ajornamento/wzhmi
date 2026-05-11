@@ -357,11 +357,16 @@ export const EditorCanvas: React.FC = () => {
             height: canvas.height,
             backgroundColor: canvas.backgroundColor,
             boxShadow: '0 0 0 1px #444, 0 8px 32px rgba(0,0,0,0.5)',
-            backgroundImage: `
-              linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)
-            `,
-            backgroundSize: `${GRID * 5}px ${GRID * 5}px`,
+            backgroundImage: [
+              'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)',
+              'linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+              ...(canvas.backgroundImage ? [`url(${canvas.backgroundImage})`] : []),
+            ].join(', '),
+            backgroundSize: canvas.backgroundImage
+              ? `${GRID * 5}px ${GRID * 5}px, ${GRID * 5}px ${GRID * 5}px, ${canvas.backgroundImageFit ?? 'cover'}`
+              : `${GRID * 5}px ${GRID * 5}px`,
+            backgroundPosition: canvas.backgroundImage ? 'top left, top left, center' : 'top left',
+            backgroundRepeat: canvas.backgroundImage ? 'repeat, repeat, no-repeat' : 'repeat',
             overflow: 'hidden',
           }}
         >

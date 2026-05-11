@@ -100,16 +100,16 @@ export class ConveyorWidget extends BaseWidget {
     svg.appendChild(botLine);
     this.appendChild(svg);
 
-    if (this.shouldDisplayLabel('bottom')) {
-      this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'CONVEYOR', 'bottom');
-      this.appendChild(this._labelElement);
-    }
+    this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'CONVEYOR', this.getLabelSide());
+    this.appendChild(this._labelElement);
 
     this.updateVisuals();
   }
 
   protected updateVisuals() {
     if (!this._widget) return;
+    this.stopBlink();
+    this.stopPulse();
     const isRunning = Number(this._value) === 1;
 
     if (this._animElem) {

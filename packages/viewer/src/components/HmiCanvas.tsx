@@ -88,9 +88,12 @@ export const HmiCanvas: React.FC = () => {
     container.style.backgroundColor = canvas.backgroundColor;
     if (canvas.backgroundImage) {
       container.style.backgroundImage = `url(${canvas.backgroundImage})`;
-      container.style.backgroundSize = 'cover';
+      container.style.backgroundSize = canvas.backgroundImageFit ?? 'cover';
+      container.style.backgroundPosition = 'center';
+      container.style.backgroundRepeat = 'no-repeat';
     } else {
       container.style.backgroundImage = '';
+      container.style.backgroundSize = '';
     }
 
     const sorted = [...widgets].sort((a, b) => a.geometry.zIndex - b.geometry.zIndex);

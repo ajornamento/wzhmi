@@ -17,15 +17,19 @@ export class LineWidget extends BaseWidget {
     const y1 = Number(p.y1 ?? 0);
     const x2 = Number(p.x2 ?? 100);
     const y2 = Number(p.y2 ?? 0);
+    const waypoints = (p.waypoints as Array<{ x: number; y: number }> | undefined) ?? [];
 
-    const bboxX = Math.min(x1, x2) - PAD;
-    const bboxY = Math.min(y1, y2) - PAD;
-    const w = Math.max(Math.abs(x2 - x1) + PAD * 2, 20);
-    const h = Math.max(Math.abs(y2 - y1) + PAD * 2, 20);
+    const allX = [x1, x2, ...waypoints.map(wp => wp.x)];
+    const allY = [y1, y2, ...waypoints.map(wp => wp.y)];
+    const bboxX = Math.min(...allX) - PAD;
+    const bboxY = Math.min(...allY) - PAD;
+    const w = Math.max(Math.max(...allX) - Math.min(...allX) + PAD * 2, 20);
+    const h = Math.max(Math.max(...allY) - Math.min(...allY) + PAD * 2, 20);
     const lx1 = x1 - bboxX;
     const ly1 = y1 - bboxY;
     const lx2 = x2 - bboxX;
     const ly2 = y2 - bboxY;
+    const localWaypoints = waypoints.map(wp => ({ x: wp.x - bboxX, y: wp.y - bboxY }));
 
     const color = this._widget.styles.baseColor;
     const lineWidth = Number(p.lineWidth ?? 2);
@@ -47,7 +51,7 @@ export class LineWidget extends BaseWidget {
     if (arrowStart) defs.appendChild(makeArrow(`${markerId}-s`, color, true));
     svg.appendChild(defs);
 
-    const d = buildPath(lx1, ly1, lx2, ly2, lineType);
+    const d = buildPath(lx1, ly1, lx2, ly2, lineType, localWaypoints);
 
     // 클릭 영역 (투명, 넓게)
     const hit = document.createElementNS(ns, 'path');
@@ -84,8 +88,8 @@ export class LineWidget extends BaseWidget {
 
     // 라벨 (중간점)
     const labelText = String(p.label ?? '');
-    if (labelText && this.shouldDisplayLabel('bottom')) {
-      this._labelElement = this.createLabelElement(labelText, 'bottom');
+    if (labelText) {
+      this._labelElement = this.createLabelElement(labelText, this.getLabelSide());
       this.appendChild(this._labelElement);
     }
 
@@ -96,6 +100,7 @@ export class LineWidget extends BaseWidget {
   protected updateVisuals() {
     if (!this._path || !this._widget) return;
     this.stopBlink();
+    this.stopPulse();
     this.stopFlow();
 
     const anim = this.getActiveAnimation();
@@ -165,7 +170,11 @@ export class LineWidget extends BaseWidget {
   }
 }
 
-function buildPath(x1: number, y1: number, x2: number, y2: number, type: string): string {
+function buildPath(x1: number, y1: number, x2: number, y2: number, type: string, waypoints: Array<{ x: number; y: number }> = []): string {
+  const allPts = [{ x: x1, y: y1 }, ...waypoints, { x: x2, y: y2 }];
+  if (allPts.length > 2) {
+    return allPts.map((pt, i) => `${i === 0 ? 'M' : 'L'}${pt.x},${pt.y}`).join(' ');
+  }
   if (type === 'orthogonal') {
     const mx = x1;
     const my = y2;

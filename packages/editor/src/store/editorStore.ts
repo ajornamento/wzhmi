@@ -20,6 +20,9 @@ interface EditorState {
   selectWidget: (id: string | null) => void;
   moveWidget: (id: string, x: number, y: number) => void;
   moveLineEndpoint: (id: string, endpoint: 'start' | 'end', x: number, y: number) => void;
+  addLineWaypoint: (id: string, segmentIndex: number, x: number, y: number) => void;
+  removeLineWaypoint: (id: string, index: number) => void;
+  moveLineWaypoint: (id: string, index: number, x: number, y: number) => void;
   resizeWidget: (id: string, width: number, height: number) => void;
   loadSchema: (schema: HmiSchema, name?: string) => void;
   setFileName: (name: string) => void;
@@ -110,6 +113,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       if (w.type === 'LINE') {
         const dx = nx - w.geometry.x;
         const dy = ny - w.geometry.y;
+        const wps = ((w.properties.waypoints as Waypoint[] | undefined) ?? []).map(wp => ({ x: wp.x + dx, y: wp.y + dy }));
         return {
           ...w,
           geometry: { ...w.geometry, x: nx, y: ny },
@@ -119,6 +123,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
             y1: Number(w.properties.y1 ?? 0) + dy,
             x2: Number(w.properties.x2 ?? 0) + dx,
             y2: Number(w.properties.y2 ?? 0) + dy,
+            waypoints: wps,
           },
         };
       }
@@ -135,19 +140,62 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       const y1 = endpoint === 'start' ? ny : Number(w.properties.y1 ?? 0);
       const x2 = endpoint === 'end'   ? nx : Number(w.properties.x2 ?? 0);
       const y2 = endpoint === 'end'   ? ny : Number(w.properties.y2 ?? 0);
+      const waypoints = (w.properties.waypoints as Waypoint[] | undefined) ?? [];
       return {
         ...w,
-        geometry: {
-          ...w.geometry,
-          x: Math.min(x1, x2) - LINE_PAD,
-          y: Math.min(y1, y2) - LINE_PAD,
-          width:  Math.max(Math.abs(x2 - x1) + LINE_PAD * 2, 20),
-          height: Math.max(Math.abs(y2 - y1) + LINE_PAD * 2, 20),
-        },
+        geometry: { ...w.geometry, ...recalcLineGeometry(x1, y1, x2, y2, waypoints) },
         properties: { ...w.properties, x1, y1, x2, y2 },
       };
     });
     return pushHistory(s, { ...s.schema, widgets: newWidgets });
+  }),
+
+  addLineWaypoint: (id, segmentIndex, x, y) => set((s) => {
+    const newWidgets = s.schema.widgets.map((w) => {
+      if (w.id !== id || w.type !== 'LINE') return w;
+      const x1 = Number(w.properties.x1 ?? 0), y1 = Number(w.properties.y1 ?? 0);
+      const x2 = Number(w.properties.x2 ?? 0), y2 = Number(w.properties.y2 ?? 0);
+      const wps = [...((w.properties.waypoints as Waypoint[] | undefined) ?? [])];
+      wps.splice(segmentIndex, 0, { x: Math.round(x), y: Math.round(y) });
+      return {
+        ...w,
+        geometry: { ...w.geometry, ...recalcLineGeometry(x1, y1, x2, y2, wps) },
+        properties: { ...w.properties, waypoints: wps },
+      };
+    });
+    return pushHistory(s, { ...s.schema, widgets: newWidgets });
+  }),
+
+  removeLineWaypoint: (id, index) => set((s) => {
+    const newWidgets = s.schema.widgets.map((w) => {
+      if (w.id !== id || w.type !== 'LINE') return w;
+      const x1 = Number(w.properties.x1 ?? 0), y1 = Number(w.properties.y1 ?? 0);
+      const x2 = Number(w.properties.x2 ?? 0), y2 = Number(w.properties.y2 ?? 0);
+      const wps = ((w.properties.waypoints as Waypoint[] | undefined) ?? []).filter((_, i) => i !== index);
+      return {
+        ...w,
+        geometry: { ...w.geometry, ...recalcLineGeometry(x1, y1, x2, y2, wps) },
+        properties: { ...w.properties, waypoints: wps },
+      };
+    });
+    return pushHistory(s, { ...s.schema, widgets: newWidgets });
+  }),
+
+  moveLineWaypoint: (id, index, x, y) => set((s) => {
+    const newWidgets = s.schema.widgets.map((w) => {
+      if (w.id !== id || w.type !== 'LINE') return w;
+      const x1 = Number(w.properties.x1 ?? 0), y1 = Number(w.properties.y1 ?? 0);
+      const x2 = Number(w.properties.x2 ?? 0), y2 = Number(w.properties.y2 ?? 0);
+      const wps = ((w.properties.waypoints as Waypoint[] | undefined) ?? []).map((wp, i) =>
+        i === index ? { x: Math.round(x), y: Math.round(y) } : wp
+      );
+      return {
+        ...w,
+        geometry: { ...w.geometry, ...recalcLineGeometry(x1, y1, x2, y2, wps) },
+        properties: { ...w.properties, waypoints: wps },
+      };
+    });
+    return { schema: { ...s.schema, widgets: newWidgets } };
   }),
 
   resizeWidget: (id, width, height) => set((s) => {
@@ -218,6 +266,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       y1: Number(w.properties.y1 ?? 0) + OFFSET,
       x2: Number(w.properties.x2 ?? 0) + OFFSET,
       y2: Number(w.properties.y2 ?? 0) + OFFSET,
+      waypoints: ((w.properties.waypoints as Waypoint[] | undefined) ?? []).map(wp => ({ x: wp.x + OFFSET, y: wp.y + OFFSET })),
     } : w.properties;
     const copy = {
       ...w,
@@ -230,6 +279,21 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     return { ...pushHistory(s, newSchema), selectedId: newId };
   }),
 }));
+
+type Waypoint = { x: number; y: number };
+
+function recalcLineGeometry(x1: number, y1: number, x2: number, y2: number, waypoints: Waypoint[]) {
+  const allX = [x1, x2, ...waypoints.map(wp => wp.x)];
+  const allY = [y1, y2, ...waypoints.map(wp => wp.y)];
+  const minX = Math.min(...allX), minY = Math.min(...allY);
+  const maxX = Math.max(...allX), maxY = Math.max(...allY);
+  return {
+    x: minX - LINE_PAD,
+    y: minY - LINE_PAD,
+    width:  Math.max(maxX - minX + LINE_PAD * 2, 20),
+    height: Math.max(maxY - minY + LINE_PAD * 2, 20),
+  };
+}
 
 function mergeWidget(w: Widget, patch: Partial<Widget>): Widget {
   return {

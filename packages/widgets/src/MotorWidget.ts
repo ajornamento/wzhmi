@@ -75,10 +75,8 @@ export class MotorWidget extends BaseWidget {
     this._svg = svg;
     this.appendChild(svg);
 
-    if (this.shouldDisplayLabel('bottom')) {
-      this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'MOTOR', 'bottom');
-      this.appendChild(this._labelElement);
-    }
+    this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'MOTOR', this.getLabelSide());
+    this.appendChild(this._labelElement);
 
     this.updateVisuals();
   }
@@ -86,6 +84,7 @@ export class MotorWidget extends BaseWidget {
   protected updateVisuals() {
     if (!this._body || !this._widget) return;
     this.stopBlink();
+    this.stopPulse();
 
     const anim = this.getActiveAnimation();
     const color = anim ? anim.value : this._widget.styles.baseColor;

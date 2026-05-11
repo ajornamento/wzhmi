@@ -97,10 +97,8 @@ export class GaugeWidget extends BaseWidget {
     svg.appendChild(maxText);
     this.appendChild(svg);
 
-    if (this.shouldDisplayLabel('bottom')) {
-      this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'GAUGE', 'bottom');
-      this.appendChild(this._labelElement);
-    }
+    this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'GAUGE', this.getLabelSide());
+    this.appendChild(this._labelElement);
 
     this.updateVisuals();
   }
@@ -119,6 +117,8 @@ export class GaugeWidget extends BaseWidget {
 
   protected updateVisuals() {
     if (!this._widget) return;
+    this.stopBlink();
+    this.stopPulse();
     const min = Number(this._widget.properties.min ?? 0);
     const max = Number(this._widget.properties.max ?? 100);
     const val = Math.min(Math.max(Number(this._value), min), max);
