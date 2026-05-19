@@ -2,11 +2,13 @@
   "name": "@wzhmi/viewer",
   "version": "1.0.0",
   "private": true,
-  "type": "module",  "main": "./dist/index.js",
+  "type": "module",
+  "main": "./dist/index.js",
   "module": "./dist/index.js",
   "exports": {
     ".": "./dist/index.js"
-  },  "scripts": {
+  },
+  "scripts": {
     "dev": "vite --port 5174",
     "build": "tsc -b && vite build",
     "build:lib": "vite build --mode library",
@@ -15,6 +17,7 @@
   "dependencies": {
     "@wzhmi/core": "*",
     "@wzhmi/widgets": "*",
+    "mqtt": "^5.15.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^4.5.2"

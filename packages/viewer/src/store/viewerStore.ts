@@ -3,7 +3,7 @@ import type { HmiSchema, UserRole } from '@wzhmi/core';
 import { emptySchema } from '@wzhmi/core';
 import type { PollFetchFn } from '../engine/PollingDataSource';
 
-export type DataSourceMode = 'websocket' | 'polling';
+export type DataSourceMode = 'websocket' | 'polling' | 'mqtt';
 export type { PollFetchFn };
 
 interface ViewerState {
@@ -14,6 +14,7 @@ interface ViewerState {
   dataSourceMode: DataSourceMode;
   pollInterval: number;
   customPollFn: PollFetchFn | null;
+  mqttBrokerUrl: string;
   setSchema: (schema: HmiSchema) => void;
   setServerUrl: (url: string) => void;
   setScale: (scale: number) => void;
@@ -21,6 +22,7 @@ interface ViewerState {
   setDataSourceMode: (mode: DataSourceMode) => void;
   setPollInterval: (ms: number) => void;
   setCustomPollFn: (fn: PollFetchFn | null) => void;
+  setMqttBrokerUrl: (url: string) => void;
 }
 
 export const useViewerStore = create<ViewerState>((set) => ({
@@ -31,6 +33,7 @@ export const useViewerStore = create<ViewerState>((set) => ({
   dataSourceMode: 'websocket',
   pollInterval: 2000,
   customPollFn: null,
+  mqttBrokerUrl: 'ws://localhost:9001',
   setSchema: (schema) => set({
     schema: {
       ...schema,
@@ -46,4 +49,5 @@ export const useViewerStore = create<ViewerState>((set) => ({
   setDataSourceMode: (dataSourceMode) => set({ dataSourceMode }),
   setPollInterval: (pollInterval) => set({ pollInterval }),
   setCustomPollFn: (customPollFn) => set({ customPollFn }),
+  setMqttBrokerUrl: (mqttBrokerUrl) => set({ mqttBrokerUrl }),
 }));

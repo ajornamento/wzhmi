@@ -20,6 +20,7 @@ export const App: React.FC = () => {
     currentUser, setCurrentUser,
     dataSourceMode, setDataSourceMode,
     pollInterval, setPollInterval,
+    mqttBrokerUrl, setMqttBrokerUrl,
   } = useViewerStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [serverFiles, setServerFiles] = useState<string[]>([]);
@@ -153,13 +154,13 @@ export const App: React.FC = () => {
 
         <div style={{ width: 1, height: 20, background: '#444', margin: '0 4px' }} />
         <span style={{ color: '#888', fontSize: 12 }}>소스:</span>
-        {(['websocket', 'polling'] as DataSourceMode[]).map((mode) => (
+        {(['websocket', 'polling', 'mqtt'] as DataSourceMode[]).map((mode) => (
           <button type="button" key={mode} onClick={() => setDataSourceMode(mode)} style={{
             ...btnStyle,
             borderColor: dataSourceMode === mode ? '#4a9eff' : '#444',
             color: dataSourceMode === mode ? '#4a9eff' : '#888',
           }}>
-            {mode === 'websocket' ? 'WS' : 'HTTP'}
+            {mode === 'websocket' ? 'WS' : mode === 'polling' ? 'HTTP' : 'MQTT'}
           </button>
         ))}
         {dataSourceMode === 'polling' && (
@@ -176,6 +177,21 @@ export const App: React.FC = () => {
               <option value={2000}>2s</option>
               <option value={5000}>5s</option>
             </select>
+          </>
+        )}
+        {dataSourceMode === 'mqtt' && (
+          <>
+            <span style={{ color: '#888', fontSize: 12 }}>브로커:</span>
+            <input
+              type="text" value={mqttBrokerUrl}
+              aria-label="MQTT 브로커 URL"
+              title="MQTT 브로커 URL"
+              onChange={(e) => setMqttBrokerUrl(e.target.value)}
+              style={{
+                background: '#1a1a2a', border: '1px solid #444', color: '#ccc',
+                borderRadius: 3, padding: '2px 6px', fontSize: 12, width: 160,
+              }}
+            />
           </>
         )}
 

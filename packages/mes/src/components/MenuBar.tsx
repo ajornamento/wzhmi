@@ -26,7 +26,7 @@ const ROLE_COLOR: Record<UserRole, string> = {
 }
 
 const MenuBar: React.FC<MenuBarProps> = ({ menus, activeMenuId, onMenuSelect }) => {
-  const { currentUser, setCurrentUser, dataSourceMode, setDataSourceMode, pollInterval, setPollInterval } = useViewerStore()
+  const { currentUser, setCurrentUser, dataSourceMode, setDataSourceMode, pollInterval, setPollInterval, mqttBrokerUrl, setMqttBrokerUrl } = useViewerStore()
 
   return (
     <div style={{
@@ -83,7 +83,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ menus, activeMenuId, onMenuSelect }) 
         <div style={{ width: 1, height: 20, backgroundColor: '#ccc', margin: '0 4px' }} />
 
         <span style={{ fontSize: '12px', color: '#555' }}>소스:</span>
-        {(['websocket', 'polling'] as DataSourceMode[]).map((mode) => (
+        {(['websocket', 'polling', 'mqtt'] as DataSourceMode[]).map((mode) => (
           <button
             key={mode}
             type="button"
@@ -99,7 +99,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ menus, activeMenuId, onMenuSelect }) 
               fontWeight: dataSourceMode === mode ? 'bold' : 'normal',
             }}
           >
-            {mode === 'websocket' ? 'WS' : 'HTTP'}
+            {mode === 'websocket' ? 'WS' : mode === 'polling' ? 'HTTP' : 'MQTT'}
           </button>
         ))}
         {dataSourceMode === 'polling' && (
@@ -116,6 +116,19 @@ const MenuBar: React.FC<MenuBarProps> = ({ menus, activeMenuId, onMenuSelect }) 
               <option value={2000}>2s</option>
               <option value={5000}>5s</option>
             </select>
+          </>
+        )}
+        {dataSourceMode === 'mqtt' && (
+          <>
+            <span style={{ fontSize: '12px', color: '#555' }}>브로커:</span>
+            <input
+              type="text"
+              value={mqttBrokerUrl}
+              aria-label="MQTT 브로커 URL"
+              title="MQTT 브로커 URL"
+              onChange={(e) => setMqttBrokerUrl(e.target.value)}
+              style={{ border: '1px solid #ccc', borderRadius: '4px', padding: '4px 6px', fontSize: '12px', width: '160px' }}
+            />
           </>
         )}
 

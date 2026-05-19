@@ -6,6 +6,7 @@ import type { BaseWidget } from '@wzhmi/widgets';
 import { DataBindingEngine } from '../engine/DataBindingEngine';
 import type { IDataSource } from '../engine/DataBindingEngine';
 import { PollingDataSource } from '../engine/PollingDataSource';
+import { MqttDataSource } from '../engine/MqttDataSource';
 import { ConfirmDialog } from './ConfirmDialog';
 import { useViewerStore } from '../store/viewerStore';
 
@@ -17,7 +18,7 @@ interface ConfirmState {
 }
 
 export const HmiCanvas: React.FC = () => {
-  const { schema, serverUrl, scale, setScale, currentUser, dataSourceMode, pollInterval, customPollFn } = useViewerStore();
+  const { schema, serverUrl, scale, setScale, currentUser, dataSourceMode, pollInterval, customPollFn, mqttBrokerUrl } = useViewerStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const outerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<IDataSource | null>(null);
@@ -83,7 +84,9 @@ export const HmiCanvas: React.FC = () => {
 
   useEffect(() => {
     const engine: IDataSource =
-      dataSourceMode === 'polling'
+      dataSourceMode === 'mqtt'
+        ? new MqttDataSource(mqttBrokerUrl)
+        : dataSourceMode === 'polling'
         ? new PollingDataSource(serverUrl, pollInterval, customPollFn ?? undefined)
         : new DataBindingEngine(serverUrl);
     engineRef.current = engine;
@@ -94,7 +97,7 @@ export const HmiCanvas: React.FC = () => {
       engine.disconnect();
       delete (window as any).__hmiEngine;
     };
-  }, [serverUrl, dataSourceMode, pollInterval, customPollFn]);
+  }, [serverUrl, dataSourceMode, pollInterval, customPollFn, mqttBrokerUrl]);
 
   useEffect(() => {
     const container = containerRef.current;
