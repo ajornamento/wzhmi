@@ -1,4 +1,5 @@
 # widget sample
+
 {
   "v": "1.0.0",               // 스키마 버전 (추후 호환성 관리용)
   "canvas": {                 // 도화지 설정
@@ -12,7 +13,7 @@
       "id": "MTR-001",        // 고유 식별자
       "type": "MOTOR",        // 위젯 타입 (Web Component 태그명과 매핑)
       "name": "Line 1 메인 모터", // 관리용 이름
-      
+
       // 1. 위치 및 크기 (Layout)
       "geometry": {
         "x": 450,

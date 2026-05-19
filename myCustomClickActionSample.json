@@ -1,0 +1,74 @@
+{
+  "v": "1.0.0",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "backgroundColor": "#1a1a1a"
+  },
+  "widgets": [
+    {
+      "id": "W001",
+      "type": "VALVE",
+      "name": "VALVE-W001",
+      "geometry": {
+        "x": 590,
+        "y": 220,
+        "width": 120,
+        "height": 120,
+        "rotation": 0,
+        "zIndex": 1
+      },
+      "binding": {
+        "tagId": "tag_aa",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#808080",
+        "animations": []
+      },
+      "actions": {
+        "confirmRequired": false,
+        "onClick": "myCustomClickAction"
+      },
+      "properties": {
+        "label": "VALVE",
+        "showTooltip": true
+      }
+    },
+    {
+      "id": "W002",
+      "type": "MOTOR",
+      "name": "MOTOR-W002",
+      "geometry": {
+        "x": 140,
+        "y": 220,
+        "width": 120,
+        "height": 120,
+        "rotation": 0,
+        "zIndex": 2
+      },
+      "binding": {
+        "tagId": "",
+        "dataType": "INT",
+        "refreshRate": 500
+      },
+      "styles": {
+        "opacity": 1,
+        "visible": true,
+        "baseColor": "#808080",
+        "animations": []
+      },
+      "actions": {
+        "confirmRequired": false,
+        "onClick": "myCustomClickAction"
+      },
+      "properties": {
+        "label": "MOTOR",
+        "showTooltip": true
+      }
+    }
+  ]
+}
