@@ -122,8 +122,9 @@ export class TextLabelWidget extends BaseWidget {
       overflow: 'visible',
     });
 
+    const bgColor = String(this._widget.properties.bgColor ?? 'rgba(0,0,0,0.4)');
     const shapeEl = buildSvgShape(ns, shape, cornerRadius, shapePoints, sw, pad);
-    shapeEl.setAttribute('fill', 'rgba(0,0,0,0.4)');
+    shapeEl.setAttribute('fill', bgColor);
     shapeEl.setAttribute('stroke', hexToRgba(baseColor, 0.7));
     shapeEl.setAttribute('stroke-width', String(sw));
     this._shapeEl = shapeEl;
@@ -211,12 +212,13 @@ export class TextLabelWidget extends BaseWidget {
 
     this._textEl.style.color = color;
     if (this._shapeEl) {
+      const bgColor = String(this._widget.properties.bgColor ?? 'rgba(0,0,0,0.4)');
       this._shapeEl.setAttribute('stroke-width', String(sw));
       this._shapeEl.setAttribute('stroke', hexToRgba(color, 0.75));
       if (anim?.effect === 'static' || anim?.effect === 'blink' || anim?.effect === 'pulse') {
         this._shapeEl.setAttribute('fill', hexToRgba(color, 0.3));
       } else {
-        this._shapeEl.setAttribute('fill', 'rgba(0,0,0,0.4)');
+        this._shapeEl.setAttribute('fill', bgColor);
       }
     }
 
@@ -230,7 +232,7 @@ export class TextLabelWidget extends BaseWidget {
 
   protected applyColor(color: string) {
     if (this._textEl) this._textEl.style.color = color;
-    if (this._shapeEl) {
+    if (this._shapeEl && this._widget) {
       this._shapeEl.setAttribute('fill', hexToRgba(color, 0.3));
       this._shapeEl.setAttribute('stroke', hexToRgba(color, 0.75));
     }

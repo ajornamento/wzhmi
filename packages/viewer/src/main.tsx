@@ -1,3 +1,4 @@
+// 뷰어 앱을 브라우저 root에 마운트하는 진입점
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';

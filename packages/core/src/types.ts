@@ -7,6 +7,14 @@ export type WidgetType =
   | 'ALARM'
   | 'TANK'
   | 'LINE'
+  | 'PIPE'
+  | 'WORKSTATION'
+  | 'HOPPER'
+  | 'REACTOR'
+  | 'WAREHOUSE'
+  | 'OVEN'
+  | 'METAL_DETECTOR'
+  | 'XRAY'
   | `CUSTOM_${string}`;
 
 export type LineStyle = 'solid' | 'dashed' | 'dotted';
@@ -57,7 +65,12 @@ export interface WidgetStyles {
 export interface WidgetActions {
   onClick?: string;
   confirmRequired?: boolean;
-  role?: string;
+  role?: UserRole;
+}
+
+export interface LineConnection {
+  widgetId: string;
+  point: 'top' | 'right' | 'bottom' | 'left';
 }
 
 export interface WidgetProperties {
@@ -68,6 +81,7 @@ export interface WidgetProperties {
   shape?: 'rect' | 'rounded' | 'ellipse' | 'triangle' | 'diamond' | 'freeform';
   cornerRadius?: number;
   shapePoints?: string;
+  remarks?: string;
   showTooltip?: boolean;
   showValue?: boolean;
   strokeWidth?: number;
@@ -89,6 +103,8 @@ export interface WidgetProperties {
   arrowStart?: boolean;
   arrowEnd?: boolean;
   flowSpeed?: number;
+  startConnection?: LineConnection;
+  endConnection?: LineConnection;
   [key: string]: unknown;
 }
 
@@ -98,6 +114,7 @@ export interface Widget {
   name: string;
   geometry: Geometry;
   binding: Binding;
+  extraBindings?: Record<string, Binding>;
   styles: WidgetStyles;
   actions: WidgetActions;
   properties: WidgetProperties;
@@ -148,3 +165,16 @@ export interface TagUpdate {
 }
 
 export type FormatterFn = (value: number | string | boolean) => string;
+
+export type UserRole = 'VIEWER' | 'OPERATOR' | 'ADMIN';
+
+// 역할 계층 — 높은 숫자일수록 상위 권한
+export const ROLE_LEVEL: Record<UserRole, number> = {
+  VIEWER: 0,
+  OPERATOR: 1,
+  ADMIN: 2,
+};
+
+export function hasPermission(userRole: UserRole, requiredRole: UserRole): boolean {
+  return ROLE_LEVEL[userRole] >= ROLE_LEVEL[requiredRole];
+}

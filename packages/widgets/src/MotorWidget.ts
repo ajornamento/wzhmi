@@ -1,3 +1,4 @@
+// 모터 위젯 커스텀 엘리먼트
 import { BaseWidget } from './base/BaseWidget';
 
 export class MotorWidget extends BaseWidget {
@@ -47,6 +48,8 @@ export class MotorWidget extends BaseWidget {
     const g = document.createElementNS(ns, 'g');
     g.setAttribute('transform', `translate(${cx},${cy})`);
 
+    const spinG = document.createElementNS(ns, 'g');
+
     const line = document.createElementNS(ns, 'line');
     line.setAttribute('x1', '0');
     line.setAttribute('y1', String(-r * 0.6));
@@ -60,14 +63,15 @@ export class MotorWidget extends BaseWidget {
     const anim = document.createElementNS(ns, 'animateTransform');
     anim.setAttribute('attributeName', 'transform');
     anim.setAttribute('type', 'rotate');
-    anim.setAttribute('from', '0');
-    anim.setAttribute('to', '360');
+    anim.setAttribute('from', '0 0 0');
+    anim.setAttribute('to', '360 0 0');
     anim.setAttribute('dur', '1.5s');
     anim.setAttribute('repeatCount', 'indefinite');
     anim.setAttribute('begin', 'indefinite');
     this._rotateAnim = anim;
-    g.appendChild(line);
-    g.appendChild(anim);
+    spinG.appendChild(line);
+    spinG.appendChild(anim);
+    g.appendChild(spinG);
 
     svg.appendChild(circle);
     svg.appendChild(gloss);

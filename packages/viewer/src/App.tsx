@@ -1,10 +1,26 @@
+// HMI 뷰어 화면과 컨트롤을 렌더링하는 메인 컴포넌트
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { HmiCanvas } from './components/HmiCanvas';
 import { useViewerStore } from './store/viewerStore';
-import type { HmiSchema } from '@wzhmi/core';
+import type { HmiSchema, Widget, UserRole } from '@wzhmi/core';
+import type { DataSourceMode } from './store/viewerStore';
+
+const ROLES: UserRole[] = ['VIEWER', 'OPERATOR', 'ADMIN'];
+
+const ROLE_COLOR: Record<UserRole, string> = {
+  VIEWER: '#888',
+  OPERATOR: '#4a9eff',
+  ADMIN: '#ff7b4a',
+};
 
 export const App: React.FC = () => {
-  const { schema, scale, setSchema, setScale, serverUrl, setServerUrl } = useViewerStore();
+  const {
+    schema, scale, setSchema, setScale,
+    serverUrl, setServerUrl,
+    currentUser, setCurrentUser,
+    dataSourceMode, setDataSourceMode,
+    pollInterval, setPollInterval,
+  } = useViewerStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [serverFiles, setServerFiles] = useState<string[]>([]);
   const apiBase = serverUrl.replace('ws://', 'http://').replace('wss://', 'https://');
@@ -36,6 +52,17 @@ export const App: React.FC = () => {
       .then(setServerFiles)
       .catch(() => {});
   }, [apiBase]);
+
+  useEffect(() => {
+    (window as any).myCustomClickAction = (widget: Widget) => {
+      alert(`위젯 클릭: ${widget.name} (${widget.id})`);
+      console.log('myCustomClickAction 호출됨', widget);
+    };
+
+    return () => {
+      delete (window as any).myCustomClickAction;
+    };
+  }, []);
 
   const handleServerLoad = useCallback((fileName: string) => {
     fetch(`${apiBase}/api/hmi/${fileName}`)
@@ -124,10 +151,55 @@ export const App: React.FC = () => {
           }}
         />
 
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+        <div style={{ width: 1, height: 20, background: '#444', margin: '0 4px' }} />
+        <span style={{ color: '#888', fontSize: 12 }}>소스:</span>
+        {(['websocket', 'polling'] as DataSourceMode[]).map((mode) => (
+          <button type="button" key={mode} onClick={() => setDataSourceMode(mode)} style={{
+            ...btnStyle,
+            borderColor: dataSourceMode === mode ? '#4a9eff' : '#444',
+            color: dataSourceMode === mode ? '#4a9eff' : '#888',
+          }}>
+            {mode === 'websocket' ? 'WS' : 'HTTP'}
+          </button>
+        ))}
+        {dataSourceMode === 'polling' && (
+          <>
+            <span style={{ color: '#888', fontSize: 12 }}>주기:</span>
+            <select
+              aria-label="폴링 주기 선택"
+              value={pollInterval}
+              onChange={(e) => setPollInterval(Number(e.target.value))}
+              style={{ background: '#2a2a3a', color: '#ccc', border: '1px solid #444', borderRadius: 3, padding: '2px 4px', fontSize: 12 }}
+            >
+              <option value={500}>0.5s</option>
+              <option value={1000}>1s</option>
+              <option value={2000}>2s</option>
+              <option value={5000}>5s</option>
+            </select>
+          </>
+        )}
+
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ color: '#666', fontSize: 11 }}>
             {schema.canvas.width}×{schema.canvas.height} | {schema.widgets.length}개 위젯
           </span>
+          <div style={{ width: 1, height: 20, background: '#444' }} />
+          <span style={{ color: '#888', fontSize: 12 }}>역할:</span>
+          {ROLES.map((role) => (
+            <button
+              key={role}
+              type="button"
+              onClick={() => setCurrentUser({ id: currentUser.id, role })}
+              style={{
+                ...btnStyle,
+                borderColor: currentUser.role === role ? ROLE_COLOR[role] : '#444',
+                color: currentUser.role === role ? ROLE_COLOR[role] : '#888',
+                fontWeight: currentUser.role === role ? 'bold' : 'normal',
+              }}
+            >
+              {role}
+            </button>
+          ))}
         </div>
       </div>
 

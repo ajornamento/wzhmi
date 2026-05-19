@@ -28,11 +28,14 @@ function applyEditorStyle(el, widget) {
             val = true;
         else if (s === 'false')
             val = false;
-        else if (s !== '' && !isNaN(Number(s)))
+        else if (!isNaN(Number(s)))
             val = Number(s);
         else
             val = s;
         el.setValue(val);
+    }
+    else {
+        el.setValue(0);
     }
 }
 function createFallbackWidgetContainer(widget) {
@@ -312,13 +315,18 @@ export const EditorCanvas = () => {
                             height: canvas.height,
                             backgroundColor: canvas.backgroundColor,
                             boxShadow: '0 0 0 1px #444, 0 8px 32px rgba(0,0,0,0.5)',
-                            backgroundImage: `
-              linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)
-            `,
-                            backgroundSize: `${GRID * 5}px ${GRID * 5}px`,
+                            backgroundImage: [
+                                'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)',
+                                'linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+                                ...(canvas.backgroundImage ? [`url(${canvas.backgroundImage})`] : []),
+                            ].join(', '),
+                            backgroundSize: canvas.backgroundImage
+                                ? `${GRID * 5}px ${GRID * 5}px, ${GRID * 5}px ${GRID * 5}px, ${canvas.backgroundImageFit ?? 'cover'}`
+                                : `${GRID * 5}px ${GRID * 5}px`,
+                            backgroundPosition: canvas.backgroundImage ? 'top left, top left, center' : 'top left',
+                            backgroundRepeat: canvas.backgroundImage ? 'repeat, repeat, no-repeat' : 'repeat',
                             overflow: 'hidden',
-                        }, children: sortedWidgets.map((widget) => (_jsx(WidgetPreview, { widget: widget, scale: scale, isSelected: widget.id === selectedId, onSelect: () => selectWidget(widget.id), onMove: (x, y) => moveWidget(widget.id, x, y) }, widget.id))) }), selectedWidget && selectedWidget.type !== 'LINE' && (_jsx(SelectionHandles, { widget: selectedWidget })), selectedWidget && selectedWidget.type === 'LINE' && (_jsx(LineHandles, { widget: selectedWidget, canvasEl: canvasRef.current }))] }), _jsxs("div", { style: {
+                        }, children: sortedWidgets.map((widget) => (_jsx(WidgetPreview, { widget: widget, scale: scale, isSelected: widget.id === selectedId, onSelect: () => selectWidget(widget.id), onMove: (x, y) => moveWidget(widget.id, x, y) }, widget.id))) }), selectedWidget && selectedWidget.type !== 'LINE' && (_jsx(SelectionHandles, { widget: selectedWidget })), selectedWidget && selectedWidget.type === 'LINE' && (_jsx(LineHandles, { widget: selectedWidget, canvasEl: canvasRef.current, nonLineWidgets: widgets.filter((w) => w.type !== 'LINE') }))] }), _jsxs("div", { style: {
                     position: 'absolute',
                     bottom: 8,
                     right: 8,

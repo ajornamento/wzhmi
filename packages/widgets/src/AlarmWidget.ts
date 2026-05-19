@@ -1,3 +1,4 @@
+// 경보 위젯 커스텀 엘리먼트
 import { BaseWidget } from './base/BaseWidget';
 
 export class AlarmWidget extends BaseWidget {

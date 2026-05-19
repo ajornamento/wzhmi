@@ -12,6 +12,14 @@ const BUILTIN_WIDGETS = [
     { type: 'ALARM', label: '알람등', icon: '🔴', desc: '알람 표시등' },
     { type: 'TEXT_LABEL', label: '텍스트', icon: '📝', desc: '동적 텍스트 표시' },
     { type: 'LINE', label: '라인', icon: '↗', desc: '위젯 연결 라인/파이프' },
+    { type: 'PIPE', label: '파이프', icon: '▬', desc: '3D 파이프 (수평/수직, 흐름 애니메이션)' },
+    { type: 'WORKSTATION', label: '작업장', icon: '🖥', desc: '작업장 (가동/대기 상태 표시)' },
+    { type: 'HOPPER', label: '호퍼', icon: '▽', desc: '호퍼 (충전 레벨 표시)' },
+    { type: 'REACTOR', label: '반응기', icon: '⚗', desc: '반응기 (교반기 회전 애니메이션)' },
+    { type: 'WAREHOUSE', label: '창고', icon: '🏭', desc: '창고 (재고 레벨 표시)' },
+    { type: 'OVEN', label: '오븐', icon: '🔥', desc: 'HACCP 오븐 (온도 모니터링)' },
+    { type: 'METAL_DETECTOR', label: '금속검출기', icon: '🔍', desc: '금속 이물질 검출 알람 표시' },
+    { type: 'XRAY', label: '엑스레이', icon: '☢', desc: 'X-ray 검사 가동 상태 표시' },
 ];
 export const WidgetPalette = () => {
     const { addWidget } = useEditorStore();
@@ -94,7 +102,7 @@ export const WidgetPalette = () => {
                                             backgroundColor: '#333', display: 'flex',
                                             alignItems: 'center', justifyContent: 'center',
                                             overflow: 'hidden',
-                                        }, children: widget.imageData ? (_jsx("img", { src: widget.imageData, alt: widget.label, style: { width: '100%', height: '100%', objectFit: 'contain' } })) : (_jsx("span", { style: { fontSize: 12 }, children: "\uD83D\uDCE6" })) }), _jsxs("div", { children: [_jsx("div", { style: { fontSize: 12, color: '#ddd' }, children: widget.label }), _jsx("div", { style: { fontSize: 10, color: '#666' }, children: widget.type })] })] }, widget.id)))] })), _jsx("div", { style: { marginTop: 12 }, children: _jsx("button", { onClick: () => setShowRegistry(true), style: {
+                                        }, children: widget.imageData ? (_jsx("img", { src: widget.imageData, alt: widget.label, style: { width: '100%', height: '100%', objectFit: 'contain' } })) : (_jsx("span", { style: { fontSize: 12 }, children: "\uD83D\uDCE6" })) }), _jsxs("div", { children: [_jsx("div", { style: { fontSize: 12, color: '#ddd' }, children: widget.label }), _jsx("div", { style: { fontSize: 10, color: '#666' }, children: widget.type })] })] }, widget.id)))] })), _jsx("div", { style: { marginTop: 12 }, children: _jsx("button", { type: "button", onClick: () => setShowRegistry(true), style: {
                                 width: '100%',
                                 padding: '8px 12px',
                                 backgroundColor: '#4a5fd5',

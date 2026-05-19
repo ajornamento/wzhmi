@@ -37,6 +37,7 @@ export class LineWidget extends BaseWidget {
     const lineType = String(p.lineType ?? 'straight');
     const arrowEnd = p.arrowEnd !== false;
     const arrowStart = !!p.arrowStart;
+    const arrowSize = Number(p.arrowSize ?? 10);
     const markerId = `lm-${this._widget.id}`;
 
     const ns = 'http://www.w3.org/2000/svg';
@@ -47,8 +48,8 @@ export class LineWidget extends BaseWidget {
     svg.setAttribute('overflow', 'visible');
 
     const defs = document.createElementNS(ns, 'defs');
-    if (arrowEnd)   defs.appendChild(makeArrow(`${markerId}-e`, color, false));
-    if (arrowStart) defs.appendChild(makeArrow(`${markerId}-s`, color, true));
+    if (arrowEnd)   defs.appendChild(makeArrow(`${markerId}-e`, color, false, arrowSize));
+    if (arrowStart) defs.appendChild(makeArrow(`${markerId}-s`, color, true, arrowSize));
     svg.appendChild(defs);
 
     const d = buildPath(lx1, ly1, lx2, ly2, lineType, localWaypoints);
@@ -187,17 +188,19 @@ function buildPath(x1: number, y1: number, x2: number, y2: number, type: string,
   return `M${x1},${y1} L${x2},${y2}`;
 }
 
-function makeArrow(id: string, color: string, reverse: boolean): SVGMarkerElement {
+function makeArrow(id: string, color: string, reverse: boolean, arrowSize: number = 10): SVGMarkerElement {
   const ns = 'http://www.w3.org/2000/svg';
   const marker = document.createElementNS(ns, 'marker') as SVGMarkerElement;
   marker.id = id;
-  marker.setAttribute('markerWidth', '10');
-  marker.setAttribute('markerHeight', '7');
-  marker.setAttribute('refX', reverse ? '1' : '9');
-  marker.setAttribute('refY', '3.5');
+  const h = arrowSize * 0.7;
+  marker.setAttribute('markerUnits', 'userSpaceOnUse');
+  marker.setAttribute('markerWidth', String(arrowSize));
+  marker.setAttribute('markerHeight', String(h));
+  marker.setAttribute('refX', reverse ? '1' : String(arrowSize));
+  marker.setAttribute('refY', String(h / 2));
   marker.setAttribute('orient', reverse ? 'auto-start-reverse' : 'auto');
   const poly = document.createElementNS(ns, 'polygon');
-  poly.setAttribute('points', '0 0, 10 3.5, 0 7');
+  poly.setAttribute('points', `0 0, ${arrowSize} ${h / 2}, 0 ${h}`);
   poly.setAttribute('fill', color);
   marker.appendChild(poly);
   return marker;

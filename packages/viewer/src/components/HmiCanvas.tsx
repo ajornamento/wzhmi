@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import type { Widget } from '@wzhmi/core';
+import { hasPermission } from '@wzhmi/core';
 import { WIDGET_TAG_MAP } from '@wzhmi/widgets';
 import type { BaseWidget } from '@wzhmi/widgets';
 import { DataBindingEngine } from '../engine/DataBindingEngine';
+import type { IDataSource } from '../engine/DataBindingEngine';
+import { PollingDataSource } from '../engine/PollingDataSource';
 import { ConfirmDialog } from './ConfirmDialog';
 import { useViewerStore } from '../store/viewerStore';
 
@@ -14,13 +17,14 @@ interface ConfirmState {
 }
 
 export const HmiCanvas: React.FC = () => {
-  const { schema, serverUrl, scale, setScale, currentUser } = useViewerStore();
+  const { schema, serverUrl, scale, setScale, currentUser, dataSourceMode, pollInterval, customPollFn } = useViewerStore();
   const containerRef = useRef<HTMLDivElement>(null);
   const outerRef = useRef<HTMLDivElement>(null);
-  const engineRef = useRef<DataBindingEngine | null>(null);
+  const engineRef = useRef<IDataSource | null>(null);
   const widgetRefs = useRef<Map<string, BaseWidget>>(new Map());
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
+  const [engineKey, setEngineKey] = useState(0);
 
   // 컨테이너 크기 추적 + 캔버스 크기 변경 시 자동 스케일 재계산
   useEffect(() => {
@@ -45,12 +49,22 @@ export const HmiCanvas: React.FC = () => {
   const offsetY = Math.max(0, (containerSize.h - schema.canvas.height * scale) / 2);
 
   const handleWidgetClick = useCallback((widget: Widget) => {
-    if (widget.actions.role && widget.actions.role !== currentUser.role) {
-      alert(`이 동작은 ${widget.actions.role} 권한이 필요합니다.`);
+    if (widget.actions.role && !hasPermission(currentUser.role, widget.actions.role)) {
+      alert(`이 동작은 ${widget.actions.role} 이상 권한이 필요합니다. (현재: ${currentUser.role})`);
       return;
     }
     const action = widget.actions.onClick;
     if (!action) return;
+
+    const fn = (window as any)[action];
+    const invokeAction = () => {
+      console.log(`[HMI Action] ${widget.id}: ${action}`);
+      if (typeof fn === 'function') {
+        fn(widget);
+      } else {
+        console.warn(`액션 함수가 없습니다: ${action}`);
+      }
+    };
 
     if (widget.actions.confirmRequired) {
       setConfirm({
@@ -58,21 +72,29 @@ export const HmiCanvas: React.FC = () => {
         action,
         widgetName: widget.name,
         onConfirm: () => {
-          console.log(`[HMI Action] ${widget.id}: ${action}`);
+          invokeAction();
           setConfirm(null);
         },
       });
     } else {
-      console.log(`[HMI Action] ${widget.id}: ${action}`);
+      invokeAction();
     }
   }, [currentUser.role]);
 
   useEffect(() => {
-    const engine = new DataBindingEngine(serverUrl);
+    const engine: IDataSource =
+      dataSourceMode === 'polling'
+        ? new PollingDataSource(serverUrl, pollInterval, customPollFn ?? undefined)
+        : new DataBindingEngine(serverUrl);
     engineRef.current = engine;
     engine.connect();
-    return () => engine.disconnect();
-  }, [serverUrl]);
+    (window as any).__hmiEngine = engine;
+    setEngineKey((k) => k + 1);
+    return () => {
+      engine.disconnect();
+      delete (window as any).__hmiEngine;
+    };
+  }, [serverUrl, dataSourceMode, pollInterval, customPollFn]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -103,6 +125,7 @@ export const HmiCanvas: React.FC = () => {
       if (!tagName) continue;
 
       const el = document.createElement(tagName) as BaseWidget;
+      el.dataset.widgetId = widget.id;
       el.configure(widget);
 
       if (widget.actions.onClick || widget.actions.confirmRequired) {
@@ -122,8 +145,17 @@ export const HmiCanvas: React.FC = () => {
           el.setValue(value);
         });
       }
+      if (widget.extraBindings && engine) {
+        for (const [key, binding] of Object.entries(widget.extraBindings)) {
+          if (binding.tagId) {
+            engine.subscribe(binding.tagId, (value) => {
+              el.setExtraValue(key, value);
+            });
+          }
+        }
+      }
     }
-  }, [schema, handleWidgetClick]);
+  }, [schema, handleWidgetClick, engineKey]);
 
   const { canvas } = schema;
 
@@ -170,3 +202,5 @@ export const HmiCanvas: React.FC = () => {
     </div>
   );
 };
+
+export default HmiCanvas;

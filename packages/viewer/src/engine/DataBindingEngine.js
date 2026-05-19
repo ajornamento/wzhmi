@@ -8,6 +8,11 @@ export class DataBindingEngine {
     connect() {
         try {
             this.ws = new WebSocket(this.url);
+            this.ws.onopen = () => {
+                for (const tagId of this.subscribers.keys()) {
+                    this.ws.send(JSON.stringify({ type: 'subscribe', tagId }));
+                }
+            };
             this.ws.onmessage = (e) => this.handleMessage(e.data);
             this.ws.onclose = () => this.scheduleReconnect();
             this.ws.onerror = () => this.ws?.close();

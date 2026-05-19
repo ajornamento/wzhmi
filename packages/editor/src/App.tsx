@@ -1,3 +1,4 @@
+// 위젯 편집기 메인 앱 컴포넌트
 import React from 'react';
 import { Toolbar } from './components/Toolbar/Toolbar';
 import { WidgetPalette } from './components/Palette/WidgetPalette';

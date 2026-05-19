@@ -31,9 +31,11 @@ function applyEditorStyle(el: BaseWidget, widget: Widget) {
     let val: number | string | boolean;
     if (s === 'true') val = true;
     else if (s === 'false') val = false;
-    else if (s !== '' && !isNaN(Number(s))) val = Number(s);
+    else if (!isNaN(Number(s))) val = Number(s);
     else val = s;
     el.setValue(val);
+  } else {
+    el.setValue(0);
   }
 }
 
@@ -387,7 +389,11 @@ export const EditorCanvas: React.FC = () => {
           <SelectionHandles widget={selectedWidget} />
         )}
         {selectedWidget && selectedWidget.type === 'LINE' && (
-          <LineHandles widget={selectedWidget} canvasEl={canvasRef.current} />
+          <LineHandles
+            widget={selectedWidget}
+            canvasEl={canvasRef.current}
+            nonLineWidgets={widgets.filter((w) => w.type !== 'LINE')}
+          />
         )}
       </div>
 

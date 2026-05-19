@@ -22,6 +22,7 @@ export const MOCK_TAGS: TagDef[] = [
   { tagId: 'PLC_01.ALARM_PRESS', description: '압력 알람', min: 0, max: 1, type: 'bool', period: 13000 },
   { tagId: 'PLC_01.RPM_01', description: '모터 RPM', min: 0, max: 3000, type: 'sine', period: 7000 },
   { tagId: 'PLC_01.FLOW_01', description: '유량계 1', min: 0, max: 500, type: 'random', period: 1000 },
+  { tagId: 'TANK1.LEVEL', description: 'TANK1 수위', min: 0, max: 100, type: 'sine', period: 15000 },
 ];
 
 export function computeValue(tag: TagDef, elapsed: number): number {

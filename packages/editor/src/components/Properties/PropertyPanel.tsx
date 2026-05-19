@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useEffect } from 'react';
-import type { Widget, Animation } from '@wzhmi/core';
+import type { Widget, Animation, UserRole } from '@wzhmi/core';
 import { useEditorStore } from '../../store/editorStore';
 import { useServerTags } from '../../hooks/useServerTags';
 
@@ -101,15 +101,15 @@ export const PropertyPanel: React.FC<Props> = ({ widget }) => {
             ))}
           </div>
         </Field>
-        {widget.type === 'TEXT_LABEL' && (
+        {widget.type !== 'LINE' && (
           <Field label="">
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
               <input
                 type="checkbox"
-                checked={widget.properties.showValue !== false}
+                checked={widget.type === 'TEXT_LABEL' ? widget.properties.showValue !== false : !!widget.properties.showValue}
                 onChange={(e) => upd({ properties: { ...widget.properties, showValue: e.target.checked } })}
               />
-              <span style={{ fontSize: 12, color: '#ccc' }}>값 표시 (태그 바인딩)</span>
+              <span style={{ fontSize: 12, color: '#ccc' }}>태그값 표시</span>
             </label>
           </Field>
         )}
@@ -129,6 +129,24 @@ export const PropertyPanel: React.FC<Props> = ({ widget }) => {
               onChange={(e) => upd({ properties: { ...widget.properties, labelColor: e.target.value || undefined } })}
             />
           </div>
+        </Field>
+        <Field label="비고">
+          <textarea
+            style={{ ...inputStyle, height: 56, resize: 'vertical', fontFamily: 'sans-serif' }}
+            value={String(widget.properties.remarks ?? '')}
+            placeholder="위젯에 대한 설명이나 메모를 입력하세요"
+            onChange={(e) => upd({ properties: { ...widget.properties, remarks: e.target.value || undefined } })}
+          />
+        </Field>
+        <Field label="">
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={widget.properties.showTooltip !== false}
+              onChange={(e) => upd({ properties: { ...widget.properties, showTooltip: e.target.checked } })}
+            />
+            <span style={{ fontSize: 12, color: '#ccc' }}>뷰어에서 비고 툴팁 표시</span>
+          </label>
         </Field>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: 6 }}>
           <Field label="폰트">
@@ -259,6 +277,30 @@ export const PropertyPanel: React.FC<Props> = ({ widget }) => {
               </div>
             </Field>
           )}
+
+          <Field label="배경색">
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input
+                type="color"
+                title="배경색"
+                value={(() => {
+                  const c = String(widget.properties.bgColor ?? '');
+                  return /^#[0-9a-f]{3}([0-9a-f]{3})?$/i.test(c) ? c : '#000000';
+                })()}
+                onChange={(e) => upd({ properties: { ...widget.properties, bgColor: e.target.value } })}
+                style={{ width: 36, height: 26, cursor: 'pointer', border: 'none', background: 'none', padding: 0 }}
+              />
+              <input
+                style={{ ...inputStyle, flex: 1 }}
+                value={String(widget.properties.bgColor ?? '')}
+                placeholder="기본 (어두운 반투명)"
+                onChange={(e) => upd({ properties: { ...widget.properties, bgColor: e.target.value || undefined } })}
+              />
+            </div>
+            <div style={{ fontSize: 10, color: '#666', marginTop: 2 }}>
+              hex, rgba(...), transparent 등 CSS 색상값 가능
+            </div>
+          </Field>
         </div>
       )}
 
@@ -317,13 +359,23 @@ export const PropertyPanel: React.FC<Props> = ({ widget }) => {
             onChange={(e) => upd({ binding: { ...widget.binding, refreshRate: Number(e.target.value) } })} />
         </Field>
         <Field label="포매터">
-          <select style={inputStyle} value={widget.binding.formatter ?? ''}
-            onChange={(e) => upd({ binding: { ...widget.binding, formatter: e.target.value || undefined } })}>
-            <option value="">없음</option>
+          <input
+            style={inputStyle}
+            list={`formatter-list-${widget.id}`}
+            value={widget.binding.formatter ?? ''}
+            placeholder="없음 또는 직접 입력"
+            onChange={(e) => upd({ binding: { ...widget.binding, formatter: e.target.value || undefined } })}
+          />
+          <datalist id={`formatter-list-${widget.id}`}>
             {['motorStatus', 'valveState', 'onOff', 'percent', 'temperature', 'pressure', 'rpm'].map((f) =>
-              <option key={f}>{f}</option>
+              <option key={f} value={f} />
             )}
-          </select>
+          </datalist>
+          <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>
+          <div style={{ marginBottom: 2 }}>목록 선택 또는 JS 템플릿 직접 입력:</div>
+          • 수치: {'${Number(value).toFixed(2)} °C'} <br />
+          • 상태: {'${value > 0 ? "가동" : "정지"}'}
+        </div>
         </Field>
       </div>
 
@@ -383,7 +435,7 @@ export const PropertyPanel: React.FC<Props> = ({ widget }) => {
                   <option value="static">static</option>
                   <option value="blink">blink</option>
                   <option value="pulse">pulse</option>
-                  {widget.type === 'LINE' && <option value="flow">flow (흐름)</option>}
+                  {(widget.type === 'LINE' || widget.type === 'PIPE') && <option value="flow">flow (흐름)</option>}
                 </select>
               </Field>
             </div>
@@ -399,10 +451,10 @@ export const PropertyPanel: React.FC<Props> = ({ widget }) => {
         </Field>
         <Field label="권한 (Role)">
           <select style={inputStyle} value={widget.actions.role ?? ''}
-            onChange={(e) => upd({ actions: { ...widget.actions, role: e.target.value || undefined } })}>
+            onChange={(e) => upd({ actions: { ...widget.actions, role: (e.target.value as UserRole) || undefined } })}>
             <option value="">없음 (모두)</option>
+            <option value="VIEWER">VIEWER</option>
             <option value="OPERATOR">OPERATOR</option>
-            <option value="ENGINEER">ENGINEER</option>
             <option value="ADMIN">ADMIN</option>
           </select>
         </Field>
@@ -414,6 +466,63 @@ export const PropertyPanel: React.FC<Props> = ({ widget }) => {
           </label>
         </Field>
       </div>
+
+      {widget.type === 'OVEN' && (() => {
+        const rt = widget.extraBindings?.runtime;
+        const setRt = (patch: { tagId?: string; dataType?: Widget['binding']['dataType']; refreshRate?: number }) => {
+          const merged = { tagId: '', dataType: 'INT' as Widget['binding']['dataType'], refreshRate: 1000, ...rt, ...patch };
+          if (!merged.tagId) {
+            const { runtime: _, ...rest } = widget.extraBindings ?? {};
+            upd({ extraBindings: Object.keys(rest).length ? rest : undefined });
+          } else {
+            upd({ extraBindings: { ...widget.extraBindings, runtime: merged } });
+          }
+        };
+        return (
+          <div style={{ ...sectionStyle }}>
+            <div style={sectionTitle}>가동시간 바인딩</div>
+            <Field label="미리보기 값 (디자인 모드)">
+              <input
+                title="가동시간 미리보기 값"
+                style={inputStyle}
+                value={String(widget.properties.runtimePreviewValue ?? '')}
+                placeholder="예: 1234"
+                onChange={(e) => upd({ properties: { ...widget.properties, runtimePreviewValue: e.target.value } })}
+              />
+            </Field>
+            <Field label="태그 ID">
+              <input
+                style={inputStyle}
+                list={`tag-list-runtime-${widget.id}`}
+                value={rt?.tagId ?? ''}
+                placeholder="없으면 숨김"
+                onChange={(e) => setRt({ tagId: e.target.value })}
+              />
+              <datalist id={`tag-list-runtime-${widget.id}`}>
+                {serverTags.map((t) => (
+                  <option key={t.tagId} value={t.tagId} label={t.description} />
+                ))}
+              </datalist>
+            </Field>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+              <Field label="데이터 타입">
+                <select title="가동시간 데이터 타입" style={inputStyle} value={rt?.dataType ?? 'INT'}
+                  onChange={(e) => setRt({ dataType: e.target.value as Widget['binding']['dataType'] })}>
+                  {['INT', 'FLOAT', 'BOOL', 'STRING'].map((t) => <option key={t}>{t}</option>)}
+                </select>
+              </Field>
+              <Field label="갱신주기 (ms)">
+                <input type="number" title="가동시간 갱신주기" style={inputStyle} value={rt?.refreshRate ?? 1000}
+                  onChange={(e) => setRt({ refreshRate: Number(e.target.value) })} />
+              </Field>
+            </div>
+            <Field label="단위">
+              <input style={inputStyle} value={String(widget.properties.runtimeUnit ?? 'h')}
+                onChange={(e) => upd({ properties: { ...widget.properties, runtimeUnit: e.target.value } })} />
+            </Field>
+          </div>
+        );
+      })()}
 
       {(widget.type === 'GAUGE' || widget.type === 'TANK') && (
         <div style={{ ...sectionStyle }}>
@@ -431,6 +540,55 @@ export const PropertyPanel: React.FC<Props> = ({ widget }) => {
           <Field label="단위">
             <input style={inputStyle} value={String(widget.properties.unit ?? '')}
               onChange={(e) => upd({ properties: { ...widget.properties, unit: e.target.value } })} />
+          </Field>
+        </div>
+      )}
+
+      {widget.type === 'PIPE' && (
+        <div style={{ ...sectionStyle }}>
+          <div style={sectionTitle}>파이프 설정</div>
+          <Field label="방향">
+            <div style={{ display: 'flex', gap: 8 }}>
+              {(['horizontal', 'vertical'] as const).map((val) => (
+                <label key={val} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name={`pipe-orient-${widget.id}`}
+                    checked={(widget.properties.orientation ?? 'horizontal') === val}
+                    onChange={() => upd({ properties: { ...widget.properties, orientation: val } })}
+                  />
+                  <span style={{ fontSize: 12, color: '#ccc' }}>{val === 'horizontal' ? '수평' : '수직'}</span>
+                </label>
+              ))}
+            </div>
+          </Field>
+          <Field label="">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={widget.properties.flanges !== false}
+                onChange={(e) => upd({ properties: { ...widget.properties, flanges: e.target.checked } })}
+              />
+              <span style={{ fontSize: 12, color: '#ccc' }}>플랜지 표시</span>
+            </label>
+          </Field>
+          {widget.properties.flanges !== false && (
+            <Field label="플랜지 크기 (px)">
+              <input
+                type="number" min={2} max={30} style={inputStyle}
+                title="플랜지 크기"
+                value={Number(widget.properties.flangeSize ?? 8)}
+                onChange={(e) => upd({ properties: { ...widget.properties, flangeSize: Number(e.target.value) } })}
+              />
+            </Field>
+          )}
+          <Field label="흐름 속도 (px/tick)">
+            <input
+              type="number" min={0.5} max={30} step={0.5} style={inputStyle}
+              title="흐름 속도"
+              value={Number(widget.properties.flowSpeed ?? 3)}
+              onChange={(e) => upd({ properties: { ...widget.properties, flowSpeed: Number(e.target.value) } })}
+            />
           </Field>
         </div>
       )}
@@ -491,6 +649,12 @@ export const PropertyPanel: React.FC<Props> = ({ widget }) => {
                 <span style={{ fontSize: 12, color: '#ccc' }}>끝 화살표</span>
               </label>
             </div>
+          </Field>
+          <Field label="화살표 크기 (px)">
+            <input type="number" min={4} max={60} style={inputStyle}
+              title="화살표 크기"
+              value={Number(widget.properties.arrowSize ?? 10)}
+              onChange={(e) => upd({ properties: { ...widget.properties, arrowSize: Number(e.target.value) } })} />
           </Field>
           <Field label="흐름 속도 (px/tick)">
             <input

@@ -28,7 +28,16 @@ export function format(formatterName, value) {
     if (!formatterName)
         return String(value);
     const fn = registry[formatterName];
-    return fn ? fn(value) : String(value);
+    if (fn)
+        return fn(value);
+    // 직접 포맷 문자열: JS 템플릿 리터럴로 평가 (`value` 변수 사용)
+    try {
+        // eslint-disable-next-line no-new-func
+        return new Function('value', `return \`${formatterName}\``)(value);
+    }
+    catch {
+        return String(value);
+    }
 }
 export function registerFormatter(name, fn) {
     registry[name] = fn;

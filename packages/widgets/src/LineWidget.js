@@ -17,20 +17,25 @@ export class LineWidget extends BaseWidget {
         const y1 = Number(p.y1 ?? 0);
         const x2 = Number(p.x2 ?? 100);
         const y2 = Number(p.y2 ?? 0);
-        const bboxX = Math.min(x1, x2) - PAD;
-        const bboxY = Math.min(y1, y2) - PAD;
-        const w = Math.max(Math.abs(x2 - x1) + PAD * 2, 20);
-        const h = Math.max(Math.abs(y2 - y1) + PAD * 2, 20);
+        const waypoints = p.waypoints ?? [];
+        const allX = [x1, x2, ...waypoints.map(wp => wp.x)];
+        const allY = [y1, y2, ...waypoints.map(wp => wp.y)];
+        const bboxX = Math.min(...allX) - PAD;
+        const bboxY = Math.min(...allY) - PAD;
+        const w = Math.max(Math.max(...allX) - Math.min(...allX) + PAD * 2, 20);
+        const h = Math.max(Math.max(...allY) - Math.min(...allY) + PAD * 2, 20);
         const lx1 = x1 - bboxX;
         const ly1 = y1 - bboxY;
         const lx2 = x2 - bboxX;
         const ly2 = y2 - bboxY;
+        const localWaypoints = waypoints.map(wp => ({ x: wp.x - bboxX, y: wp.y - bboxY }));
         const color = this._widget.styles.baseColor;
         const lineWidth = Number(p.lineWidth ?? 2);
         const lineStyle = String(p.lineStyle ?? 'solid');
         const lineType = String(p.lineType ?? 'straight');
         const arrowEnd = p.arrowEnd !== false;
         const arrowStart = !!p.arrowStart;
+        const arrowSize = Number(p.arrowSize ?? 10);
         const markerId = `lm-${this._widget.id}`;
         const ns = 'http://www.w3.org/2000/svg';
         const svg = document.createElementNS(ns, 'svg');
@@ -40,11 +45,11 @@ export class LineWidget extends BaseWidget {
         svg.setAttribute('overflow', 'visible');
         const defs = document.createElementNS(ns, 'defs');
         if (arrowEnd)
-            defs.appendChild(makeArrow(`${markerId}-e`, color, false));
+            defs.appendChild(makeArrow(`${markerId}-e`, color, false, arrowSize));
         if (arrowStart)
-            defs.appendChild(makeArrow(`${markerId}-s`, color, true));
+            defs.appendChild(makeArrow(`${markerId}-s`, color, true, arrowSize));
         svg.appendChild(defs);
-        const d = buildPath(lx1, ly1, lx2, ly2, lineType);
+        const d = buildPath(lx1, ly1, lx2, ly2, lineType, localWaypoints);
         // 클릭 영역 (투명, 넓게)
         const hit = document.createElementNS(ns, 'path');
         hit.setAttribute('d', d);
@@ -81,8 +86,8 @@ export class LineWidget extends BaseWidget {
         svg.appendChild(flowPath);
         // 라벨 (중간점)
         const labelText = String(p.label ?? '');
-        if (labelText && this.shouldDisplayLabel('bottom')) {
-            this._labelElement = this.createLabelElement(labelText, 'bottom');
+        if (labelText) {
+            this._labelElement = this.createLabelElement(labelText, this.getLabelSide());
             this.appendChild(this._labelElement);
         }
         this.appendChild(svg);
@@ -92,6 +97,7 @@ export class LineWidget extends BaseWidget {
         if (!this._path || !this._widget)
             return;
         this.stopBlink();
+        this.stopPulse();
         this.stopFlow();
         const anim = this.getActiveAnimation();
         const baseColor = this._widget.styles.baseColor;
@@ -155,7 +161,11 @@ export class LineWidget extends BaseWidget {
         this.stopFlow();
     }
 }
-function buildPath(x1, y1, x2, y2, type) {
+function buildPath(x1, y1, x2, y2, type, waypoints = []) {
+    const allPts = [{ x: x1, y: y1 }, ...waypoints, { x: x2, y: y2 }];
+    if (allPts.length > 2) {
+        return allPts.map((pt, i) => `${i === 0 ? 'M' : 'L'}${pt.x},${pt.y}`).join(' ');
+    }
     if (type === 'orthogonal') {
         const mx = x1;
         const my = y2;
@@ -167,17 +177,19 @@ function buildPath(x1, y1, x2, y2, type) {
     }
     return `M${x1},${y1} L${x2},${y2}`;
 }
-function makeArrow(id, color, reverse) {
+function makeArrow(id, color, reverse, arrowSize = 10) {
     const ns = 'http://www.w3.org/2000/svg';
     const marker = document.createElementNS(ns, 'marker');
     marker.id = id;
-    marker.setAttribute('markerWidth', '10');
-    marker.setAttribute('markerHeight', '7');
-    marker.setAttribute('refX', reverse ? '1' : '9');
-    marker.setAttribute('refY', '3.5');
+    const h = arrowSize * 0.7;
+    marker.setAttribute('markerUnits', 'userSpaceOnUse');
+    marker.setAttribute('markerWidth', String(arrowSize));
+    marker.setAttribute('markerHeight', String(h));
+    marker.setAttribute('refX', reverse ? '1' : String(arrowSize));
+    marker.setAttribute('refY', String(h / 2));
     marker.setAttribute('orient', reverse ? 'auto-start-reverse' : 'auto');
     const poly = document.createElementNS(ns, 'polygon');
-    poly.setAttribute('points', '0 0, 10 3.5, 0 7');
+    poly.setAttribute('points', `0 0, ${arrowSize} ${h / 2}, 0 ${h}`);
     poly.setAttribute('fill', color);
     marker.appendChild(poly);
     return marker;

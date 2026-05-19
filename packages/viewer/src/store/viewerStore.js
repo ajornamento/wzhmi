@@ -4,7 +4,9 @@ export const useViewerStore = create((set) => ({
     schema: emptySchema(),
     serverUrl: 'ws://localhost:3001',
     scale: 1,
-    currentUser: { id: 'user1', role: 'OPERATOR' },
+    currentUser: { id: 'user1', role: 'VIEWER' },
+    dataSourceMode: 'websocket',
+    pollInterval: 2000,
     setSchema: (schema) => set({
         schema: {
             ...schema,
@@ -16,4 +18,7 @@ export const useViewerStore = create((set) => ({
     }),
     setServerUrl: (serverUrl) => set({ serverUrl }),
     setScale: (scale) => set({ scale }),
+    setCurrentUser: (currentUser) => set({ currentUser }),
+    setDataSourceMode: (dataSourceMode) => set({ dataSourceMode }),
+    setPollInterval: (pollInterval) => set({ pollInterval }),
 }));

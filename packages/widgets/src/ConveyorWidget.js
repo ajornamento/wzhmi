@@ -1,3 +1,4 @@
+// 컨베이어 위젯 커스텀 엘리먼트
 import { BaseWidget } from './base/BaseWidget';
 export class ConveyorWidget extends BaseWidget {
     constructor() {
@@ -88,15 +89,15 @@ export class ConveyorWidget extends BaseWidget {
         svg.appendChild(topLine);
         svg.appendChild(botLine);
         this.appendChild(svg);
-        if (this.shouldDisplayLabel('bottom')) {
-            this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'CONVEYOR', 'bottom');
-            this.appendChild(this._labelElement);
-        }
+        this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'CONVEYOR', this.getLabelSide());
+        this.appendChild(this._labelElement);
         this.updateVisuals();
     }
     updateVisuals() {
         if (!this._widget)
             return;
+        this.stopBlink();
+        this.stopPulse();
         const isRunning = Number(this._value) === 1;
         if (this._animElem) {
             if (isRunning) {

@@ -55,8 +55,25 @@ export const useEditorStore = create((set, get) => ({
         return { ...pushHistory(s, newSchema), selectedId: id };
     }),
     removeWidget: (id) => set((s) => {
-        const newSchema = { ...s.schema, widgets: s.schema.widgets.filter((w) => w.id !== id) };
-        return { ...pushHistory(s, newSchema), selectedId: null };
+        const newWidgets = s.schema.widgets
+            .filter((w) => w.id !== id)
+            .map((w) => {
+            if (w.type !== 'LINE')
+                return w;
+            const sc = w.properties.startConnection;
+            const ec = w.properties.endConnection;
+            if (sc?.widgetId !== id && ec?.widgetId !== id)
+                return w;
+            return {
+                ...w,
+                properties: {
+                    ...w.properties,
+                    ...(sc?.widgetId === id ? { startConnection: undefined } : {}),
+                    ...(ec?.widgetId === id ? { endConnection: undefined } : {}),
+                },
+            };
+        });
+        return { ...pushHistory(s, { ...s.schema, widgets: newWidgets }), selectedId: null };
     }),
     updateWidget: (id, patch) => set((s) => {
         const newWidgets = s.schema.widgets.map((w) => w.id === id ? mergeWidget(w, patch) : w);
@@ -65,26 +82,56 @@ export const useEditorStore = create((set, get) => ({
     }),
     selectWidget: (id) => set({ selectedId: id }),
     moveWidget: (id, x, y) => set((s) => {
+        const target = s.schema.widgets.find((w) => w.id === id);
+        if (!target)
+            return {};
+        const nx = Math.round(x), ny = Math.round(y);
+        const movedTarget = { ...target, geometry: { ...target.geometry, x: nx, y: ny } };
         const newWidgets = s.schema.widgets.map((w) => {
-            if (w.id !== id)
-                return w;
-            const nx = Math.round(x), ny = Math.round(y);
-            if (w.type === 'LINE') {
-                const dx = nx - w.geometry.x;
-                const dy = ny - w.geometry.y;
-                return {
-                    ...w,
-                    geometry: { ...w.geometry, x: nx, y: ny },
-                    properties: {
-                        ...w.properties,
-                        x1: Number(w.properties.x1 ?? 0) + dx,
-                        y1: Number(w.properties.y1 ?? 0) + dy,
-                        x2: Number(w.properties.x2 ?? 0) + dx,
-                        y2: Number(w.properties.y2 ?? 0) + dy,
-                    },
-                };
+            if (w.id === id) {
+                if (w.type === 'LINE') {
+                    const dx = nx - w.geometry.x;
+                    const dy = ny - w.geometry.y;
+                    const wps = (w.properties.waypoints ?? []).map(wp => ({ x: wp.x + dx, y: wp.y + dy }));
+                    return {
+                        ...w,
+                        geometry: { ...w.geometry, x: nx, y: ny },
+                        properties: {
+                            ...w.properties,
+                            x1: Number(w.properties.x1 ?? 0) + dx,
+                            y1: Number(w.properties.y1 ?? 0) + dy,
+                            x2: Number(w.properties.x2 ?? 0) + dx,
+                            y2: Number(w.properties.y2 ?? 0) + dy,
+                            waypoints: wps,
+                        },
+                    };
+                }
+                return { ...w, geometry: { ...w.geometry, x: nx, y: ny } };
             }
-            return { ...w, geometry: { ...w.geometry, x: nx, y: ny } };
+            if (w.type !== 'LINE')
+                return w;
+            const sc = w.properties.startConnection;
+            const ec = w.properties.endConnection;
+            if (sc?.widgetId !== id && ec?.widgetId !== id)
+                return w;
+            let x1 = Number(w.properties.x1 ?? 0), y1 = Number(w.properties.y1 ?? 0);
+            let x2 = Number(w.properties.x2 ?? 0), y2 = Number(w.properties.y2 ?? 0);
+            if (sc?.widgetId === id) {
+                const pt = getConnectionPoint(movedTarget, sc.point);
+                x1 = pt.x;
+                y1 = pt.y;
+            }
+            if (ec?.widgetId === id) {
+                const pt = getConnectionPoint(movedTarget, ec.point);
+                x2 = pt.x;
+                y2 = pt.y;
+            }
+            const wps = w.properties.waypoints ?? [];
+            return {
+                ...w,
+                geometry: { ...w.geometry, ...recalcLineGeometry(x1, y1, x2, y2, wps) },
+                properties: { ...w.properties, x1, y1, x2, y2 },
+            };
         });
         return { schema: { ...s.schema, widgets: newWidgets } };
     }),
@@ -97,19 +144,83 @@ export const useEditorStore = create((set, get) => ({
             const y1 = endpoint === 'start' ? ny : Number(w.properties.y1 ?? 0);
             const x2 = endpoint === 'end' ? nx : Number(w.properties.x2 ?? 0);
             const y2 = endpoint === 'end' ? ny : Number(w.properties.y2 ?? 0);
+            const waypoints = w.properties.waypoints ?? [];
             return {
                 ...w,
-                geometry: {
-                    ...w.geometry,
-                    x: Math.min(x1, x2) - LINE_PAD,
-                    y: Math.min(y1, y2) - LINE_PAD,
-                    width: Math.max(Math.abs(x2 - x1) + LINE_PAD * 2, 20),
-                    height: Math.max(Math.abs(y2 - y1) + LINE_PAD * 2, 20),
-                },
+                geometry: { ...w.geometry, ...recalcLineGeometry(x1, y1, x2, y2, waypoints) },
                 properties: { ...w.properties, x1, y1, x2, y2 },
             };
         });
         return pushHistory(s, { ...s.schema, widgets: newWidgets });
+    }),
+    finalizeLineEndpoint: (id, endpoint, x, y, connection) => set((s) => {
+        const newWidgets = s.schema.widgets.map((w) => {
+            if (w.id !== id || w.type !== 'LINE')
+                return w;
+            const nx = Math.round(x), ny = Math.round(y);
+            const x1 = endpoint === 'start' ? nx : Number(w.properties.x1 ?? 0);
+            const y1 = endpoint === 'start' ? ny : Number(w.properties.y1 ?? 0);
+            const x2 = endpoint === 'end' ? nx : Number(w.properties.x2 ?? 0);
+            const y2 = endpoint === 'end' ? ny : Number(w.properties.y2 ?? 0);
+            const waypoints = w.properties.waypoints ?? [];
+            return {
+                ...w,
+                geometry: { ...w.geometry, ...recalcLineGeometry(x1, y1, x2, y2, waypoints) },
+                properties: {
+                    ...w.properties, x1, y1, x2, y2,
+                    ...(endpoint === 'start'
+                        ? { startConnection: connection ?? undefined }
+                        : { endConnection: connection ?? undefined }),
+                },
+            };
+        });
+        return pushHistory(s, { ...s.schema, widgets: newWidgets });
+    }),
+    addLineWaypoint: (id, segmentIndex, x, y) => set((s) => {
+        const newWidgets = s.schema.widgets.map((w) => {
+            if (w.id !== id || w.type !== 'LINE')
+                return w;
+            const x1 = Number(w.properties.x1 ?? 0), y1 = Number(w.properties.y1 ?? 0);
+            const x2 = Number(w.properties.x2 ?? 0), y2 = Number(w.properties.y2 ?? 0);
+            const wps = [...(w.properties.waypoints ?? [])];
+            wps.splice(segmentIndex, 0, { x: Math.round(x), y: Math.round(y) });
+            return {
+                ...w,
+                geometry: { ...w.geometry, ...recalcLineGeometry(x1, y1, x2, y2, wps) },
+                properties: { ...w.properties, waypoints: wps },
+            };
+        });
+        return pushHistory(s, { ...s.schema, widgets: newWidgets });
+    }),
+    removeLineWaypoint: (id, index) => set((s) => {
+        const newWidgets = s.schema.widgets.map((w) => {
+            if (w.id !== id || w.type !== 'LINE')
+                return w;
+            const x1 = Number(w.properties.x1 ?? 0), y1 = Number(w.properties.y1 ?? 0);
+            const x2 = Number(w.properties.x2 ?? 0), y2 = Number(w.properties.y2 ?? 0);
+            const wps = (w.properties.waypoints ?? []).filter((_, i) => i !== index);
+            return {
+                ...w,
+                geometry: { ...w.geometry, ...recalcLineGeometry(x1, y1, x2, y2, wps) },
+                properties: { ...w.properties, waypoints: wps },
+            };
+        });
+        return pushHistory(s, { ...s.schema, widgets: newWidgets });
+    }),
+    moveLineWaypoint: (id, index, x, y) => set((s) => {
+        const newWidgets = s.schema.widgets.map((w) => {
+            if (w.id !== id || w.type !== 'LINE')
+                return w;
+            const x1 = Number(w.properties.x1 ?? 0), y1 = Number(w.properties.y1 ?? 0);
+            const x2 = Number(w.properties.x2 ?? 0), y2 = Number(w.properties.y2 ?? 0);
+            const wps = (w.properties.waypoints ?? []).map((wp, i) => i === index ? { x: Math.round(x), y: Math.round(y) } : wp);
+            return {
+                ...w,
+                geometry: { ...w.geometry, ...recalcLineGeometry(x1, y1, x2, y2, wps) },
+                properties: { ...w.properties, waypoints: wps },
+            };
+        });
+        return { schema: { ...s.schema, widgets: newWidgets } };
     }),
     resizeWidget: (id, width, height) => set((s) => {
         const newWidgets = s.schema.widgets.map((w) => w.id === id ? { ...w, geometry: { ...w.geometry, width: Math.max(20, Math.round(width)), height: Math.max(20, Math.round(height)) } } : w);
@@ -171,6 +282,7 @@ export const useEditorStore = create((set, get) => ({
             y1: Number(w.properties.y1 ?? 0) + OFFSET,
             x2: Number(w.properties.x2 ?? 0) + OFFSET,
             y2: Number(w.properties.y2 ?? 0) + OFFSET,
+            waypoints: (w.properties.waypoints ?? []).map(wp => ({ x: wp.x + OFFSET, y: wp.y + OFFSET })),
         } : w.properties;
         const copy = {
             ...w,
@@ -183,6 +295,28 @@ export const useEditorStore = create((set, get) => ({
         return { ...pushHistory(s, newSchema), selectedId: newId };
     }),
 }));
+function getConnectionPoint(w, point) {
+    const { x, y, width, height } = w.geometry;
+    if (point === 'top')
+        return { x: x + width / 2, y };
+    if (point === 'bottom')
+        return { x: x + width / 2, y: y + height };
+    if (point === 'left')
+        return { x, y: y + height / 2 };
+    return { x: x + width, y: y + height / 2 };
+}
+function recalcLineGeometry(x1, y1, x2, y2, waypoints) {
+    const allX = [x1, x2, ...waypoints.map(wp => wp.x)];
+    const allY = [y1, y2, ...waypoints.map(wp => wp.y)];
+    const minX = Math.min(...allX), minY = Math.min(...allY);
+    const maxX = Math.max(...allX), maxY = Math.max(...allY);
+    return {
+        x: minX - LINE_PAD,
+        y: minY - LINE_PAD,
+        width: Math.max(maxX - minX + LINE_PAD * 2, 20),
+        height: Math.max(maxY - minY + LINE_PAD * 2, 20),
+    };
+}
 function mergeWidget(w, patch) {
     return {
         ...w,

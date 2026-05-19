@@ -1,3 +1,4 @@
+// 게이지 위젯 커스텀 엘리먼트
 import { BaseWidget } from './base/BaseWidget';
 export class GaugeWidget extends BaseWidget {
     constructor() {
@@ -87,10 +88,8 @@ export class GaugeWidget extends BaseWidget {
         svg.appendChild(minText);
         svg.appendChild(maxText);
         this.appendChild(svg);
-        if (this.shouldDisplayLabel('bottom')) {
-            this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'GAUGE', 'bottom');
-            this.appendChild(this._labelElement);
-        }
+        this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'GAUGE', this.getLabelSide());
+        this.appendChild(this._labelElement);
         this.updateVisuals();
     }
     describeArc(cx, cy, r, startDeg, endDeg) {
@@ -106,6 +105,8 @@ export class GaugeWidget extends BaseWidget {
     updateVisuals() {
         if (!this._widget)
             return;
+        this.stopBlink();
+        this.stopPulse();
         const min = Number(this._widget.properties.min ?? 0);
         const max = Number(this._widget.properties.max ?? 100);
         const val = Math.min(Math.max(Number(this._value), min), max);

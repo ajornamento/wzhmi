@@ -5,7 +5,7 @@ import cors from 'cors';
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { MOCK_TAGS, computeValue } from './mockData.js';
+import { MOCK_TAGS, computeValue, type TagDef } from './mockData.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const HMI_DIR = join(__dirname, '../../hmi-files');
@@ -44,6 +44,17 @@ app.post('/api/hmi/:name', (req, res) => {
 
 app.get('/api/tags', (_req, res) => {
   res.json(MOCK_TAGS.map((t) => ({ tagId: t.tagId, description: t.description })));
+});
+
+app.post('/api/tags/values', (req, res) => {
+  const { tagIds } = req.body as { tagIds?: string[] };
+  if (!Array.isArray(tagIds) || tagIds.length === 0) return res.json([]);
+  const elapsed = Date.now() - startTime;
+  const result = tagIds
+    .map((id) => MOCK_TAGS.find((t) => t.tagId === id))
+    .filter((tag): tag is TagDef => tag !== undefined)
+    .map((tag) => ({ tagId: tag.tagId, value: computeValue(tag, elapsed), timestamp: Date.now() }));
+  res.json(result);
 });
 
 const httpServer = createServer(app);

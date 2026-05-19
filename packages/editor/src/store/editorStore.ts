@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { HmiSchema, Widget, WidgetType } from '@wzhmi/core';
+import type { HmiSchema, Widget, WidgetType, LineConnection } from '@wzhmi/core';
 import { emptySchema, defaultWidget, LINE_PAD } from '@wzhmi/core';
 
 type HistoryEntry = HmiSchema;
@@ -20,6 +20,7 @@ interface EditorState {
   selectWidget: (id: string | null) => void;
   moveWidget: (id: string, x: number, y: number) => void;
   moveLineEndpoint: (id: string, endpoint: 'start' | 'end', x: number, y: number) => void;
+  finalizeLineEndpoint: (id: string, endpoint: 'start' | 'end', x: number, y: number, connection: LineConnection | null) => void;
   addLineWaypoint: (id: string, segmentIndex: number, x: number, y: number) => void;
   removeLineWaypoint: (id: string, index: number) => void;
   moveLineWaypoint: (id: string, index: number, x: number, y: number) => void;
@@ -92,8 +93,23 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   }),
 
   removeWidget: (id) => set((s) => {
-    const newSchema = { ...s.schema, widgets: s.schema.widgets.filter((w) => w.id !== id) };
-    return { ...pushHistory(s, newSchema), selectedId: null };
+    const newWidgets = s.schema.widgets
+      .filter((w) => w.id !== id)
+      .map((w) => {
+        if (w.type !== 'LINE') return w;
+        const sc = w.properties.startConnection as LineConnection | undefined;
+        const ec = w.properties.endConnection as LineConnection | undefined;
+        if (sc?.widgetId !== id && ec?.widgetId !== id) return w;
+        return {
+          ...w,
+          properties: {
+            ...w.properties,
+            ...(sc?.widgetId === id ? { startConnection: undefined } : {}),
+            ...(ec?.widgetId === id ? { endConnection: undefined } : {}),
+          },
+        };
+      });
+    return { ...pushHistory(s, { ...s.schema, widgets: newWidgets }), selectedId: null };
   }),
 
   updateWidget: (id, patch) => set((s) => {
@@ -107,27 +123,45 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   selectWidget: (id) => set({ selectedId: id }),
 
   moveWidget: (id, x, y) => set((s) => {
+    const target = s.schema.widgets.find((w) => w.id === id);
+    if (!target) return {};
+    const nx = Math.round(x), ny = Math.round(y);
+    const movedTarget = { ...target, geometry: { ...target.geometry, x: nx, y: ny } };
     const newWidgets = s.schema.widgets.map((w) => {
-      if (w.id !== id) return w;
-      const nx = Math.round(x), ny = Math.round(y);
-      if (w.type === 'LINE') {
-        const dx = nx - w.geometry.x;
-        const dy = ny - w.geometry.y;
-        const wps = ((w.properties.waypoints as Waypoint[] | undefined) ?? []).map(wp => ({ x: wp.x + dx, y: wp.y + dy }));
-        return {
-          ...w,
-          geometry: { ...w.geometry, x: nx, y: ny },
-          properties: {
-            ...w.properties,
-            x1: Number(w.properties.x1 ?? 0) + dx,
-            y1: Number(w.properties.y1 ?? 0) + dy,
-            x2: Number(w.properties.x2 ?? 0) + dx,
-            y2: Number(w.properties.y2 ?? 0) + dy,
-            waypoints: wps,
-          },
-        };
+      if (w.id === id) {
+        if (w.type === 'LINE') {
+          const dx = nx - w.geometry.x;
+          const dy = ny - w.geometry.y;
+          const wps = ((w.properties.waypoints as Waypoint[] | undefined) ?? []).map(wp => ({ x: wp.x + dx, y: wp.y + dy }));
+          return {
+            ...w,
+            geometry: { ...w.geometry, x: nx, y: ny },
+            properties: {
+              ...w.properties,
+              x1: Number(w.properties.x1 ?? 0) + dx,
+              y1: Number(w.properties.y1 ?? 0) + dy,
+              x2: Number(w.properties.x2 ?? 0) + dx,
+              y2: Number(w.properties.y2 ?? 0) + dy,
+              waypoints: wps,
+            },
+          };
+        }
+        return { ...w, geometry: { ...w.geometry, x: nx, y: ny } };
       }
-      return { ...w, geometry: { ...w.geometry, x: nx, y: ny } };
+      if (w.type !== 'LINE') return w;
+      const sc = w.properties.startConnection as LineConnection | undefined;
+      const ec = w.properties.endConnection as LineConnection | undefined;
+      if (sc?.widgetId !== id && ec?.widgetId !== id) return w;
+      let x1 = Number(w.properties.x1 ?? 0), y1 = Number(w.properties.y1 ?? 0);
+      let x2 = Number(w.properties.x2 ?? 0), y2 = Number(w.properties.y2 ?? 0);
+      if (sc?.widgetId === id) { const pt = getConnectionPoint(movedTarget, sc.point); x1 = pt.x; y1 = pt.y; }
+      if (ec?.widgetId === id) { const pt = getConnectionPoint(movedTarget, ec.point); x2 = pt.x; y2 = pt.y; }
+      const wps = (w.properties.waypoints as Waypoint[] | undefined) ?? [];
+      return {
+        ...w,
+        geometry: { ...w.geometry, ...recalcLineGeometry(x1, y1, x2, y2, wps) },
+        properties: { ...w.properties, x1, y1, x2, y2 },
+      };
     });
     return { schema: { ...s.schema, widgets: newWidgets } };
   }),
@@ -145,6 +179,29 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         ...w,
         geometry: { ...w.geometry, ...recalcLineGeometry(x1, y1, x2, y2, waypoints) },
         properties: { ...w.properties, x1, y1, x2, y2 },
+      };
+    });
+    return pushHistory(s, { ...s.schema, widgets: newWidgets });
+  }),
+
+  finalizeLineEndpoint: (id, endpoint, x, y, connection) => set((s) => {
+    const newWidgets = s.schema.widgets.map((w) => {
+      if (w.id !== id || w.type !== 'LINE') return w;
+      const nx = Math.round(x), ny = Math.round(y);
+      const x1 = endpoint === 'start' ? nx : Number(w.properties.x1 ?? 0);
+      const y1 = endpoint === 'start' ? ny : Number(w.properties.y1 ?? 0);
+      const x2 = endpoint === 'end'   ? nx : Number(w.properties.x2 ?? 0);
+      const y2 = endpoint === 'end'   ? ny : Number(w.properties.y2 ?? 0);
+      const waypoints = (w.properties.waypoints as Waypoint[] | undefined) ?? [];
+      return {
+        ...w,
+        geometry: { ...w.geometry, ...recalcLineGeometry(x1, y1, x2, y2, waypoints) },
+        properties: {
+          ...w.properties, x1, y1, x2, y2,
+          ...(endpoint === 'start'
+            ? { startConnection: connection ?? undefined }
+            : { endConnection: connection ?? undefined }),
+        },
       };
     });
     return pushHistory(s, { ...s.schema, widgets: newWidgets });
@@ -281,6 +338,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 }));
 
 type Waypoint = { x: number; y: number };
+
+function getConnectionPoint(w: Widget, point: string): { x: number; y: number } {
+  const { x, y, width, height } = w.geometry;
+  if (point === 'top')    return { x: x + width / 2, y };
+  if (point === 'bottom') return { x: x + width / 2, y: y + height };
+  if (point === 'left')   return { x, y: y + height / 2 };
+  return { x: x + width, y: y + height / 2 };
+}
 
 function recalcLineGeometry(x1: number, y1: number, x2: number, y2: number, waypoints: Waypoint[]) {
   const allX = [x1, x2, ...waypoints.map(wp => wp.x)];

@@ -1,8 +1,15 @@
 import type { TagValue, TagUpdate } from '@wzhmi/core';
 
-type TagCallback = (value: number | string | boolean) => void;
+export type TagCallback = (value: number | string | boolean) => void;
 
-export class DataBindingEngine {
+export interface IDataSource {
+  connect(): void;
+  disconnect(): void;
+  subscribe(tagId: string, cb: TagCallback): void;
+  unsubscribe(tagId: string, cb: TagCallback): void;
+}
+
+export class DataBindingEngine implements IDataSource {
   private ws: WebSocket | null = null;
   private subscribers = new Map<string, Set<TagCallback>>();
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -15,6 +22,11 @@ export class DataBindingEngine {
   connect() {
     try {
       this.ws = new WebSocket(this.url);
+      this.ws.onopen = () => {
+        for (const tagId of this.subscribers.keys()) {
+          this.ws!.send(JSON.stringify({ type: 'subscribe', tagId }));
+        }
+      };
       this.ws.onmessage = (e) => this.handleMessage(e.data);
       this.ws.onclose = () => this.scheduleReconnect();
       this.ws.onerror = () => this.ws?.close();

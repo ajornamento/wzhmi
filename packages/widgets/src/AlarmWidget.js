@@ -1,3 +1,4 @@
+// 경보 위젯 커스텀 엘리먼트
 import { BaseWidget } from './base/BaseWidget';
 export class AlarmWidget extends BaseWidget {
     constructor() {
@@ -47,16 +48,15 @@ export class AlarmWidget extends BaseWidget {
         svg.appendChild(light);
         svg.appendChild(gloss);
         this.appendChild(svg);
-        if (this.shouldDisplayLabel('bottom')) {
-            this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'ALARM', 'bottom');
-            this.appendChild(this._labelElement);
-        }
+        this._labelElement = this.createLabelElement(this._widget?.properties.label ?? 'ALARM', this.getLabelSide());
+        this.appendChild(this._labelElement);
         this.updateVisuals();
     }
     updateVisuals() {
         if (!this._light || !this._widget)
             return;
         this.stopBlink();
+        this.stopPulse();
         const anim = this.getActiveAnimation();
         const color = anim ? anim.value : this._widget.styles.baseColor;
         this._light.setAttribute('fill', color);

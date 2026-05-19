@@ -1,22 +1,36 @@
 import { create } from 'zustand';
-import type { HmiSchema } from '@wzhmi/core';
+import type { HmiSchema, UserRole } from '@wzhmi/core';
 import { emptySchema } from '@wzhmi/core';
+import type { PollFetchFn } from '../engine/PollingDataSource';
+
+export type DataSourceMode = 'websocket' | 'polling';
+export type { PollFetchFn };
 
 interface ViewerState {
   schema: HmiSchema;
   serverUrl: string;
   scale: number;
-  currentUser: { id: string; role: string };
+  currentUser: { id: string; role: UserRole };
+  dataSourceMode: DataSourceMode;
+  pollInterval: number;
+  customPollFn: PollFetchFn | null;
   setSchema: (schema: HmiSchema) => void;
   setServerUrl: (url: string) => void;
   setScale: (scale: number) => void;
+  setCurrentUser: (user: { id: string; role: UserRole }) => void;
+  setDataSourceMode: (mode: DataSourceMode) => void;
+  setPollInterval: (ms: number) => void;
+  setCustomPollFn: (fn: PollFetchFn | null) => void;
 }
 
 export const useViewerStore = create<ViewerState>((set) => ({
   schema: emptySchema(),
   serverUrl: 'ws://localhost:3001',
   scale: 1,
-  currentUser: { id: 'user1', role: 'OPERATOR' },
+  currentUser: { id: 'user1', role: 'VIEWER' },
+  dataSourceMode: 'websocket',
+  pollInterval: 2000,
+  customPollFn: null,
   setSchema: (schema) => set({
     schema: {
       ...schema,
@@ -28,4 +42,8 @@ export const useViewerStore = create<ViewerState>((set) => ({
   }),
   setServerUrl: (serverUrl) => set({ serverUrl }),
   setScale: (scale) => set({ scale }),
+  setCurrentUser: (currentUser) => set({ currentUser }),
+  setDataSourceMode: (dataSourceMode) => set({ dataSourceMode }),
+  setPollInterval: (pollInterval) => set({ pollInterval }),
+  setCustomPollFn: (customPollFn) => set({ customPollFn }),
 }));
